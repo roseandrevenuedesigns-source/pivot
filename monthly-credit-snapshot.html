@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monthly Credit Snapshot</title>
+  <style>
+    :root {
+      --bg: #f6f1e8;
+      --panel: #fffaf3;
+      --panel-soft: #efe2cf;
+      --text: #2f2a25;
+      --muted: #6f6458;
+      --line: #d8c8b2;
+      --accent: #785032;
+      --accent-soft: #ecd9c3;
+      --green: #3a6547;
+      --gold: #8d6529;
+      --rose: #8e4b4b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, #fffdf8 0, #fffdf8 18%, transparent 19%),
+        linear-gradient(180deg, #f4e8d7 0%, var(--bg) 32%, #eee3d5 100%);
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 32px));
+      margin: 28px auto 48px;
+    }
+
+    .hero,
+    .panel,
+    .summary-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 14px 28px rgba(78, 53, 29, 0.08);
+    }
+
+    .hero {
+      padding: 28px;
+      margin-bottom: 24px;
+      background:
+        linear-gradient(135deg, rgba(120, 80, 50, 0.08), rgba(255, 255, 255, 0)),
+        var(--panel);
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0 0 12px;
+      line-height: 1.15;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 4vw, 3rem);
+    }
+
+    p {
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    .hero p,
+    .panel > p,
+    .note,
+    .assessment p {
+      color: var(--muted);
+    }
+
+    .panel {
+      padding: 24px;
+    }
+
+    .timing-setup {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fffdf9;
+    }
+
+    .timing-field label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 18px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fffdf9;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 980px;
+    }
+
+    th,
+    td {
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    th {
+      text-align: left;
+      background: #f9f1e5;
+      font-size: 0.95rem;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    input,
+    select,
+    textarea,
+    button {
+      font: inherit;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 9px 10px;
+      background: #fff;
+      color: var(--text);
+    }
+
+    textarea {
+      min-height: 42px;
+      resize: vertical;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 20px;
+      cursor: pointer;
+    }
+
+    .primary {
+      background: var(--accent);
+      color: #fffaf4;
+    }
+
+    .secondary {
+      background: var(--panel-soft);
+      color: var(--text);
+    }
+
+    .danger {
+      background: #f5e1df;
+      color: #6f2d2d;
+      padding: 8px 12px;
+    }
+
+    .summary {
+      display: none;
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .summary.visible {
+      display: grid;
+    }
+
+    .summary-card {
+      padding: 20px;
+    }
+
+    .assessment {
+      padding: 22px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .summary-card ul {
+      margin: 12px 0 0;
+      padding-left: 20px;
+    }
+
+    .summary-card li + li {
+      margin-top: 8px;
+    }
+
+    .standing h3 {
+      color: var(--green);
+    }
+
+    .coverage h3 {
+      color: var(--gold);
+    }
+
+    .progress h3 {
+      color: var(--rose);
+    }
+
+    .focus h3 {
+      color: var(--accent);
+    }
+
+    .note {
+      margin-top: 18px;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 760px) {
+      .wrap {
+        width: min(100% - 20px, 1180px);
+        margin-top: 16px;
+      }
+
+      .hero,
+      .panel,
+      .summary-card,
+      .assessment {
+        border-radius: 16px;
+      }
+
+      .summary-grid,
+      .timing-setup {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1>Monthly Credit Snapshot</h1>
+      <p>
+        Use this workspace to record monthly credit-account standing, reinforce containment wins, and keep visible
+        where stability and follow-through are holding across the cycle.
+      </p>
+    </section>
+
+    <section class="panel">
+      <h2>Monthly Credit Snapshot</h2>
+      <p>
+        This is a stabilization tracking workspace inside FCOS. It is not budgeting, forecasting, or a payoff calculator.
+      </p>
+
+      <section class="timing-setup" aria-label="Month Setup">
+        <div class="timing-field">
+          <label for="mappedMonthSelect">Month being mapped</label>
+          <select id="mappedMonthSelect">
+            <option value="">Select month</option>
+            <option value="1">January</option>
+            <option value="2">February</option>
+            <option value="3">March</option>
+            <option value="4">April</option>
+            <option value="5">May</option>
+            <option value="6">June</option>
+            <option value="7">July</option>
+            <option value="8">August</option>
+            <option value="9">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+          </select>
+        </div>
+        <div class="timing-field">
+          <label for="mappedYearSelect">Year</label>
+          <select id="mappedYearSelect">
+            <option value="">Select year</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+            <option value="2028">2028</option>
+          </select>
+        </div>
+      </section>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Account name</th>
+              <th>Statement balance</th>
+              <th>Minimum required</th>
+              <th>Planned payment this cycle</th>
+              <th>Actual payment this cycle</th>
+              <th>Account status this month</th>
+              <th>Notes</th>
+              <th>Row</th>
+            </tr>
+          </thead>
+          <tbody id="credit-rows"></tbody>
+        </table>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="secondary" id="add-row-btn">Add Row</button>
+        <button type="button" class="primary" id="generate-btn">Generate Snapshot Summary</button>
+        <button type="button" class="secondary" id="reset-btn">Reset Snapshot</button>
+      </div>
+
+      <section id="summary" class="summary" aria-live="polite">
+        <div class="summary-card assessment">
+          <h2>Monthly Snapshot Summary</h2>
+          <p id="assessment-text"></p>
+        </div>
+
+        <div class="summary-grid">
+          <article class="summary-card standing">
+            <h3>Stable Standing This Month</h3>
+            <ul id="standing-list"></ul>
+          </article>
+
+          <article class="summary-card coverage">
+            <h3>Minimum Coverage Signals</h3>
+            <ul id="coverage-list"></ul>
+          </article>
+
+          <article class="summary-card progress">
+            <h3>Protection and Stabilization Signals</h3>
+            <ul id="progress-list"></ul>
+          </article>
+
+          <article class="summary-card focus">
+            <h3>Monthly Reinforcement Focus</h3>
+            <ul id="focus-list"></ul>
+          </article>
+        </div>
+
+        <p class="note">
+          This tool is a simple monthly containment progress snapshot and not legal, credit, or financial advice.
+        </p>
+      </section>
+    </section>
+  </main>
+
+  <template id="row-template">
+    <tr>
+      <td><input type="text" data-field="accountName" placeholder="Visa, auto loan, store card"></td>
+      <td><input type="number" data-field="statementBalance" min="0" step="0.01" placeholder="0.00"></td>
+      <td><input type="number" data-field="minimumRequired" min="0" step="0.01" placeholder="0.00"></td>
+      <td><input type="number" data-field="plannedPayment" min="0" step="0.01" placeholder="0.00"></td>
+      <td><input type="number" data-field="actualPayment" min="0" step="0.01" placeholder="0.00"></td>
+      <td>
+        <select data-field="status">
+          <option value="">Select</option>
+          <option>Current</option>
+          <option>Protection plan active</option>
+          <option>Stabilizing</option>
+          <option>Behind</option>
+          <option>Paid off</option>
+          <option>Monitoring only</option>
+        </select>
+      </td>
+      <td><textarea data-field="notes" placeholder="Optional notes"></textarea></td>
+      <td><button type="button" class="danger remove-row-btn">Remove</button></td>
+    </tr>
+  </template>
+
+  <script>
+    const rowsBody = document.getElementById("credit-rows");
+    const rowTemplate = document.getElementById("row-template");
+    const mappedMonthSelect = document.getElementById("mappedMonthSelect");
+    const mappedYearSelect = document.getElementById("mappedYearSelect");
+    const summary = document.getElementById("summary");
+    const assessmentText = document.getElementById("assessment-text");
+    const standingList = document.getElementById("standing-list");
+    const coverageList = document.getElementById("coverage-list");
+    const progressList = document.getElementById("progress-list");
+    const focusList = document.getElementById("focus-list");
+
+    function addRow(data = {}) {
+      const fragment = rowTemplate.content.cloneNode(true);
+      const row = fragment.querySelector("tr");
+
+      row.querySelectorAll("[data-field]").forEach((field) => {
+        const key = field.dataset.field;
+        if (data[key] !== undefined && data[key] !== null && data[key] !== "") {
+          field.value = data[key];
+        }
+      });
+
+      row.querySelector(".remove-row-btn").addEventListener("click", () => {
+        row.remove();
+        if (!rowsBody.children.length) addRow();
+      });
+
+      rowsBody.appendChild(row);
+    }
+
+    function readRows() {
+      return Array.from(rowsBody.querySelectorAll("tr"))
+        .map((row) => {
+          const result = {};
+          row.querySelectorAll("[data-field]").forEach((field) => {
+            result[field.dataset.field] = field.value.trim();
+          });
+          return result;
+        })
+        .filter((row) => Object.values(row).some((value) => value !== ""));
+    }
+
+    function parseMonthSelection(monthValue, yearValue) {
+      if (!monthValue || !yearValue) return "";
+      const date = new Date(Number(yearValue), Number(monthValue) - 1, 1);
+      if (Number.isNaN(date.getTime())) return "";
+      return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    }
+
+    function setList(list, items, fallback) {
+      list.innerHTML = "";
+      if (!items.length) {
+        list.innerHTML = `<li>${fallback}</li>`;
+        return;
+      }
+
+      items.forEach((text) => {
+        const item = document.createElement("li");
+        item.textContent = text;
+        list.appendChild(item);
+      });
+    }
+
+    function buildAssessment(rows, mappedMonth) {
+      const currentCount = rows.filter((row) => row.status === "Current").length;
+      const protectionCount = rows.filter((row) => row.status === "Protection plan active").length;
+      const stabilizingCount = rows.filter((row) => row.status === "Stabilizing").length;
+      const minimumCoveredCount = rows.filter((row) => {
+        const planned = Number(row.plannedPayment || 0);
+        const actual = Number(row.actualPayment || 0);
+        const minimum = Number(row.minimumRequired || 0);
+        return minimum > 0 && (planned >= minimum || actual >= minimum);
+      }).length;
+
+      if (currentCount >= 3 && minimumCoveredCount >= 3) {
+        return `${mappedMonth ? `${mappedMonth} ` : "This month "}shows several accounts remaining in stable standing. Continued minimum coverage and protection-plan follow-through are supporting containment progress.`;
+      }
+
+      if (protectionCount > 0 || stabilizingCount > 0) {
+        return `${mappedMonth ? `${mappedMonth} ` : "This month "}shows visible stabilization work in progress. Protection plans, minimum coverage, and steady follow-through appear to be helping maintain continuity across accounts.`;
+      }
+
+      return `${mappedMonth ? `${mappedMonth} ` : "This month "}shows a manageable snapshot overall. Continued consistency around minimum coverage and account monitoring can help reinforce stability through the cycle.`;
+    }
+
+    function generateSummary() {
+      const rows = readRows();
+      const mappedMonth = parseMonthSelection(mappedMonthSelect.value, mappedYearSelect.value);
+
+      if (!rows.length) {
+        window.alert("Please enter at least one credit account row before generating the snapshot summary.");
+        return;
+      }
+
+      const currentAccounts = rows.filter((row) => row.status === "Current");
+      const protectionAccounts = rows.filter((row) => row.status === "Protection plan active");
+      const stabilizingAccounts = rows.filter((row) => row.status === "Stabilizing");
+      const behindAccounts = rows.filter((row) => row.status === "Behind");
+
+      const minimumCoverage = rows.filter((row) => {
+        const planned = Number(row.plannedPayment || 0);
+        const actual = Number(row.actualPayment || 0);
+        const minimum = Number(row.minimumRequired || 0);
+        return minimum > 0 && (planned >= minimum || actual >= minimum);
+      });
+
+      const standing = [];
+      const coverage = [];
+      const progress = [];
+      const focus = [];
+
+      standing.push(`${currentAccounts.length} account(s) are marked current this month.`);
+      if (rows.some((row) => row.status === "Paid off")) {
+        standing.push(`${rows.filter((row) => row.status === "Paid off").length} account(s) are marked paid off.`);
+      }
+      if (rows.some((row) => row.status === "Monitoring only")) {
+        standing.push(`${rows.filter((row) => row.status === "Monitoring only").length} account(s) are being monitored without active change this month.`);
+      }
+
+      coverage.push(`${minimumCoverage.length} account(s) appear to have minimum coverage planned or already reflected this cycle.`);
+      if (minimumCoverage.length < rows.length) {
+        coverage.push("Some accounts may still need closer review to confirm minimum continuity this month.");
+      } else {
+        coverage.push("Minimum coverage appears broadly in place across the listed accounts.");
+      }
+
+      progress.push(`${protectionAccounts.length} account(s) are marked with a protection plan active.`);
+      progress.push(`${stabilizingAccounts.length} account(s) are marked stabilizing this month.`);
+      if (behindAccounts.length) {
+        progress.push(`${behindAccounts.length} account(s) are marked behind and may benefit from continued containment attention.`);
+      } else {
+        progress.push("No accounts are currently marked behind in this snapshot.");
+      }
+
+      if (protectionAccounts.length) {
+        focus.push("Maintain follow-through on protection-plan accounts so those supports keep holding through the cycle.");
+      }
+      if (stabilizingAccounts.length) {
+        focus.push("Keep stabilizing accounts visible and continue steady monthly continuity steps.");
+      }
+      if (!protectionAccounts.length && !stabilizingAccounts.length) {
+        focus.push("Continue reinforcing current standing with steady minimum coverage and calm account monitoring.");
+      }
+      if (behindAccounts.length) {
+        focus.push("Review behind accounts gently and identify where continuity or protection steps may need to stay active this month.");
+      }
+
+      setList(standingList, standing, "No stable-standing signals were identified from the current entries.");
+      setList(coverageList, coverage, "No minimum-coverage signals were identified from the current entries.");
+      setList(progressList, progress, "No protection or stabilization signals were identified from the current entries.");
+      setList(focusList, focus, "No monthly reinforcement focus was identified from the current entries.");
+
+      assessmentText.textContent = buildAssessment(rows, mappedMonth);
+      summary.classList.add("visible");
+      summary.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function resetSnapshot() {
+      rowsBody.innerHTML = "";
+      addRow();
+      summary.classList.remove("visible");
+      mappedMonthSelect.value = "";
+      mappedYearSelect.value = "";
+    }
+
+    document.getElementById("add-row-btn").addEventListener("click", () => addRow());
+    document.getElementById("generate-btn").addEventListener("click", generateSummary);
+    document.getElementById("reset-btn").addEventListener("click", resetSnapshot);
+
+    addRow();
+    addRow();
+  </script>
+</body>
+</html>

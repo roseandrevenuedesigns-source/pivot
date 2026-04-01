@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monthly Bill Map</title>
+  <style>
+    :root {
+      --bg: #f6f1e8;
+      --panel: #fffaf3;
+      --panel-soft: #efe2cf;
+      --text: #2f2a25;
+      --muted: #6f6458;
+      --line: #d8c8b2;
+      --accent: #785032;
+      --accent-soft: #ecd9c3;
+      --green: #3a6547;
+      --gold: #8d6529;
+      --rose: #8e4b4b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, #fffdf8 0, #fffdf8 18%, transparent 19%),
+        linear-gradient(180deg, #f4e8d7 0%, var(--bg) 32%, #eee3d5 100%);
+    }
+
+    .wrap {
+      width: min(1200px, calc(100% - 32px));
+      margin: 28px auto 48px;
+    }
+
+    .hero,
+    .panel,
+    .summary-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 14px 28px rgba(78, 53, 29, 0.08);
+    }
+
+    .hero {
+      padding: 28px;
+      margin-bottom: 24px;
+      background:
+        linear-gradient(135deg, rgba(120, 80, 50, 0.08), rgba(255, 255, 255, 0)),
+        var(--panel);
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0 0 12px;
+      line-height: 1.15;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 4vw, 3rem);
+    }
+
+    p {
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    .hero p,
+    .panel > p,
+    .note,
+    .assessment p {
+      color: var(--muted);
+    }
+
+    .panel {
+      padding: 24px;
+    }
+
+    .timing-setup {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fffdf9;
+    }
+
+    .timing-field label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 18px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fffdf9;
+    }
+
+    .subsection-title {
+      margin-top: 20px;
+      margin-bottom: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1080px;
+    }
+
+    th,
+    td {
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    th {
+      text-align: left;
+      background: #f9f1e5;
+      font-size: 0.95rem;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    input,
+    select,
+    textarea,
+    button {
+      font: inherit;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 9px 10px;
+      background: #fff;
+      color: var(--text);
+    }
+
+    textarea {
+      min-height: 42px;
+      resize: vertical;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 20px;
+      cursor: pointer;
+    }
+
+    .primary {
+      background: var(--accent);
+      color: #fffaf4;
+    }
+
+    .secondary {
+      background: var(--panel-soft);
+      color: var(--text);
+    }
+
+    .danger {
+      background: #f5e1df;
+      color: #6f2d2d;
+      padding: 8px 12px;
+    }
+
+    .summary {
+      display: none;
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .summary.visible {
+      display: grid;
+    }
+
+    .summary-card {
+      padding: 20px;
+    }
+
+    .assessment {
+      padding: 22px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .summary-card ul {
+      margin: 12px 0 0;
+      padding-left: 20px;
+    }
+
+    .summary-card li + li {
+      margin-top: 8px;
+    }
+
+    .paycheck-view {
+      display: none;
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .paycheck-view.visible {
+      display: grid;
+    }
+
+    .paycheck-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .paycheck-card {
+      padding: 20px;
+    }
+
+    .paycheck-card h3 {
+      margin-bottom: 8px;
+      color: var(--accent);
+    }
+
+    .paycheck-card p {
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .paycheck-item {
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+      margin-top: 12px;
+    }
+
+    .paycheck-item:first-of-type {
+      border-top: 0;
+      padding-top: 0;
+      margin-top: 0;
+    }
+
+    .paycheck-item strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .paycheck-item ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .paycheck-item li + li {
+      margin-top: 6px;
+    }
+
+    .calendar-view {
+      display: none;
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .calendar-view.visible {
+      display: grid;
+    }
+
+    .calendar-wrap {
+      overflow-x: auto;
+    }
+
+    .calendar-title {
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .calendar-header,
+    .calendar-body {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+      min-width: 840px;
+    }
+
+    .calendar-body {
+      grid-template-rows: repeat(6, minmax(70px, auto));
+    }
+
+    .calendar-weekday,
+    .calendar-day {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fffdf9;
+      padding: 10px;
+      min-height: 70px;
+    }
+
+    .calendar-weekday {
+      min-height: auto;
+      text-align: center;
+      font-weight: 700;
+      background: #f9f1e5;
+    }
+
+    .calendar-day.muted {
+      opacity: 0.45;
+    }
+
+    .calendar-day strong {
+      display: block;
+      margin-bottom: 6px;
+      text-align: left;
+      font-size: 1rem;
+    }
+
+    .calendar-markers {
+      font-size: 1.1rem;
+      margin-bottom: 6px;
+      min-height: 1.4em;
+    }
+
+    .calendar-notes {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .protection h3 {
+      color: var(--green);
+    }
+
+    .load h3 {
+      color: var(--rose);
+    }
+
+    .protections h3,
+    .focus h3 {
+      color: var(--gold);
+    }
+
+    .note {
+      margin-top: 18px;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 760px) {
+      .wrap {
+        width: min(100% - 20px, 1200px);
+        margin-top: 16px;
+      }
+
+      .hero,
+      .panel,
+      .summary-card,
+      .assessment {
+        border-radius: 16px;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .timing-setup {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1>Monthly Bill Map</h1>
+      <p>
+        Use this workspace to map real bills and obligations for the month, assign them to paycheck windows,
+        and see how the cycle is structured for containment execution inside FCOS.
+      </p>
+    </section>
+
+    <section class="panel">
+      <h2>Monthly Containment Planning Workspace</h2>
+      <p>
+        This tool is for monthly containment planning, sequencing, and continuity. It is not budgeting,
+        forecasting, or financial advice.
+      </p>
+
+      <section class="timing-setup" aria-label="Cycle Timing Setup">
+        <div class="timing-field">
+          <label for="mappedMonthSelect">Month being mapped</label>
+          <select id="mappedMonthSelect">
+            <option value="">Select month</option>
+            <option value="1">January</option>
+            <option value="2">February</option>
+            <option value="3">March</option>
+            <option value="4">April</option>
+            <option value="5">May</option>
+            <option value="6">June</option>
+            <option value="7">July</option>
+            <option value="8">August</option>
+            <option value="9">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+          </select>
+        </div>
+        <div class="timing-field">
+          <label for="mappedYearSelect">Year</label>
+          <select id="mappedYearSelect">
+            <option value="">Select year</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+            <option value="2028">2028</option>
+          </select>
+        </div>
+      </section>
+
+      <h3 class="subsection-title">Paycheck Entries</h3>
+      <p>
+        Use paycheck entries to map actual deposit events for the cycle. These are timing supports for execution, not bills or obligations.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Paycheck label</th>
+              <th>Paycheck date</th>
+              <th>Expected deposit account</th>
+              <th>Notes</th>
+              <th>Row</th>
+            </tr>
+          </thead>
+          <tbody id="paycheck-rows"></tbody>
+        </table>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="secondary" id="add-paycheck-row-btn">Add Paycheck Row</button>
+      </div>
+
+      <h3 class="subsection-title">Monthly Bill Map</h3>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Bill / obligation name</th>
+              <th>Category</th>
+              <th>Due date</th>
+              <th>Statement / Amount Due</th>
+              <th>Minimum Required</th>
+              <th>Planned Payment This Cycle</th>
+              <th>Paycheck window</th>
+              <th>Draft source / account</th>
+              <th>Protected this cycle</th>
+              <th>Hardship or protective arrangement active</th>
+              <th>Notes</th>
+              <th>Row</th>
+            </tr>
+          </thead>
+          <tbody id="bill-rows"></tbody>
+        </table>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="secondary" id="add-row-btn">Add Bill Row</button>
+        <button type="button" class="primary" id="generate-btn">Generate Monthly Summary</button>
+        <button type="button" class="secondary" id="reset-btn">Reset All</button>
+      </div>
+
+      <section id="summary" class="summary" aria-live="polite">
+        <div class="summary-card assessment">
+          <h2>Monthly Summary</h2>
+          <p id="assessment-text"></p>
+        </div>
+
+        <div class="summary-grid">
+          <article class="summary-card protection">
+            <h3>Infrastructure Protection Order</h3>
+            <ul id="protection-list"></ul>
+          </article>
+
+          <article class="summary-card load">
+            <h3>Paycheck Window Load</h3>
+            <ul id="load-list"></ul>
+          </article>
+
+          <article class="summary-card protections">
+            <h3>Active Protections</h3>
+            <ul id="protections-list"></ul>
+          </article>
+
+          <article class="summary-card focus">
+            <h3>Monthly Execution Focus</h3>
+            <ul id="focus-list"></ul>
+          </article>
+        </div>
+
+        <p class="note">
+          This tool is a simple monthly containment planning workspace and not legal, credit, or financial advice.
+        </p>
+      </section>
+
+      <section id="paycheck-view" class="paycheck-view" aria-live="polite">
+        <div class="summary-card paycheck-card">
+          <h2>Paycheck Execution View</h2>
+          <p>
+            This view is generated from the bill map entries above so each paycheck window can be reviewed as its own execution sequence.
+          </p>
+        </div>
+
+        <div class="paycheck-grid">
+          <article class="summary-card paycheck-card">
+            <h3>Check 1</h3>
+            <p id="check1-interpretation"></p>
+            <div id="check1-items"></div>
+          </article>
+
+          <article class="summary-card paycheck-card">
+            <h3>Check 2</h3>
+            <p id="check2-interpretation"></p>
+            <div id="check2-items"></div>
+          </article>
+
+          <article class="summary-card paycheck-card">
+            <h3>Check 3 / Other</h3>
+            <p id="check3-interpretation"></p>
+            <div id="check3-items"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="calendar-view" class="calendar-view" aria-live="polite">
+        <div class="summary-card paycheck-card">
+          <h2>Calendar Timing View</h2>
+          <p>
+            This read-only calendar shows how paycheck dates and bill due dates align across the mapped month for timing awareness inside FCOS.
+          </p>
+          <p class="note">Legend: 🟢 paycheck date, 🔵 bill due date</p>
+          <p id="calendar-debug" class="note"></p>
+        </div>
+        <div class="summary-card paycheck-card">
+          <h3 id="calendar-title" class="calendar-title"></h3>
+          <div class="calendar-wrap">
+            <div id="calendar-header" class="calendar-header"></div>
+            <div id="calendar-body" class="calendar-body"></div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <template id="row-template">
+    <tr>
+      <td><input type="text" data-field="name" placeholder="Rent, electric, car payment"></td>
+      <td>
+        <select data-field="category">
+          <option value="">Select</option>
+          <option>Housing</option>
+          <option>Utilities</option>
+          <option>Debt</option>
+          <option>Insurance</option>
+          <option>Transportation</option>
+          <option>Childcare</option>
+          <option>Other</option>
+        </select>
+      </td>
+      <td><input type="date" data-field="dueDate"></td>
+      <td><input type="number" data-field="statementAmountDue" min="0" step="0.01" placeholder="0.00"></td>
+      <td><input type="number" data-field="minimumRequired" min="0" step="0.01" placeholder="0.00"></td>
+      <td><input type="number" data-field="plannedPayment" min="0" step="0.01" placeholder="0.00"></td>
+      <td>
+        <select data-field="paycheckWindow">
+          <option value="">Select</option>
+          <option>Check 1</option>
+          <option>Check 2</option>
+          <option>Check 3 / Other</option>
+        </select>
+      </td>
+      <td><input type="text" data-field="draftSource" placeholder="Main checking, bill-pay account"></td>
+      <td>
+        <select data-field="protected">
+          <option value="">Select</option>
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+        </select>
+      </td>
+      <td>
+        <select data-field="arrangement">
+          <option value="">Select</option>
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+        </select>
+      </td>
+      <td><textarea data-field="notes" placeholder="Optional notes"></textarea></td>
+      <td><button type="button" class="danger remove-row-btn">Remove</button></td>
+    </tr>
+  </template>
+
+  <template id="paycheck-row-template">
+    <tr>
+      <td>
+        <select data-paycheck-field="label">
+          <option value="">Select</option>
+          <option>Check 1</option>
+          <option>Check 2</option>
+          <option>Check 3 / Other</option>
+        </select>
+      </td>
+      <td><input type="date" data-paycheck-field="date"></td>
+      <td><input type="text" data-paycheck-field="account" placeholder="Main checking, payroll card"></td>
+      <td><textarea data-paycheck-field="notes" placeholder="Optional notes"></textarea></td>
+      <td><button type="button" class="danger remove-paycheck-row-btn">Remove</button></td>
+    </tr>
+  </template>
+
+  <script>
+    const rowsBody = document.getElementById("bill-rows");
+    const rowTemplate = document.getElementById("row-template");
+    const paycheckRowsBody = document.getElementById("paycheck-rows");
+    const paycheckRowTemplate = document.getElementById("paycheck-row-template");
+    const summary = document.getElementById("summary");
+    const assessmentText = document.getElementById("assessment-text");
+    const protectionList = document.getElementById("protection-list");
+    const loadList = document.getElementById("load-list");
+    const protectionsList = document.getElementById("protections-list");
+    const focusList = document.getElementById("focus-list");
+    const paycheckView = document.getElementById("paycheck-view");
+    const calendarView = document.getElementById("calendar-view");
+    const calendarTitle = document.getElementById("calendar-title");
+    const calendarHeader = document.getElementById("calendar-header");
+    const calendarBody = document.getElementById("calendar-body");
+    const mappedMonthSelect = document.getElementById("mappedMonthSelect");
+    const mappedYearSelect = document.getElementById("mappedYearSelect");
+    const calendarDebug = document.getElementById("calendar-debug");
+    const paycheckTargets = {
+      "Check 1": {
+        interpretation: document.getElementById("check1-interpretation"),
+        items: document.getElementById("check1-items")
+      },
+      "Check 2": {
+        interpretation: document.getElementById("check2-interpretation"),
+        items: document.getElementById("check2-items")
+      },
+      "Check 3 / Other": {
+        interpretation: document.getElementById("check3-interpretation"),
+        items: document.getElementById("check3-items")
+      }
+    };
+
+    function addRow(data = {}) {
+      const fragment = rowTemplate.content.cloneNode(true);
+      const row = fragment.querySelector("tr");
+
+      row.querySelectorAll("[data-field]").forEach((field) => {
+        const key = field.dataset.field;
+        if (data[key] !== undefined && data[key] !== null && data[key] !== "") {
+          field.value = data[key];
+        }
+      });
+
+      row.querySelector(".remove-row-btn").addEventListener("click", () => {
+        row.remove();
+        if (!rowsBody.children.length) addRow();
+      });
+
+      rowsBody.appendChild(row);
+    }
+
+    function addPaycheckRow(data = {}) {
+      const fragment = paycheckRowTemplate.content.cloneNode(true);
+      const row = fragment.querySelector("tr");
+
+      row.querySelectorAll("[data-paycheck-field]").forEach((field) => {
+        const key = field.dataset.paycheckField;
+        if (data[key] !== undefined && data[key] !== null && data[key] !== "") {
+          field.value = data[key];
+        }
+      });
+
+      row.querySelector(".remove-paycheck-row-btn").addEventListener("click", () => {
+        row.remove();
+        if (!paycheckRowsBody.children.length) addPaycheckRow();
+      });
+
+      paycheckRowsBody.appendChild(row);
+    }
+
+    function setList(list, items, fallback) {
+      list.innerHTML = "";
+      if (!items.length) {
+        list.innerHTML = `<li>${fallback}</li>`;
+        return;
+      }
+
+      items.forEach((text) => {
+        const item = document.createElement("li");
+        item.textContent = text;
+        list.appendChild(item);
+      });
+    }
+
+    function formatDate(value) {
+      if (!value) return "Not entered";
+      const date = new Date(`${value}T00:00:00`);
+      if (Number.isNaN(date.getTime())) return value;
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      });
+    }
+
+    function formatDateNoYear(value) {
+      if (!value) return "";
+      const date = new Date(`${value}T00:00:00`);
+      if (Number.isNaN(date.getTime())) return value;
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric"
+      });
+    }
+
+    function formatMonthLabel(monthNumber, year) {
+      if (!monthNumber || !year) return "";
+      const date = new Date(Number(year), Number(monthNumber) - 1, 1);
+      if (Number.isNaN(date.getTime())) return "";
+      return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    }
+
+    function parseMonthSelection(monthValue, yearValue) {
+      if (!monthValue || !yearValue) return null;
+      const year = Number(yearValue);
+      const monthNumber = Number(monthValue);
+      if (!Number.isInteger(year) || !Number.isInteger(monthNumber) || monthNumber < 1 || monthNumber > 12) {
+        return null;
+      }
+      return {
+        year,
+        monthNumber,
+        monthIndex: monthNumber - 1
+      };
+    }
+
+    function formatShortAnchor(value) {
+      if (!value) return "";
+      return formatDate(value).replace(/, \d{4}$/, "");
+    }
+
+    function formatMoney(value) {
+      if (!value) return "Not entered";
+      const number = Number(value);
+      if (Number.isNaN(number)) return value;
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD"
+      }).format(number);
+    }
+
+    function formatTitleLike(value) {
+      if (!value) return "Unnamed obligation";
+      const trimmed = value.trim();
+      if (!trimmed) return "Unnamed obligation";
+      return trimmed
+        .split(/\s+/)
+        .map((word) => {
+          if (!/[a-zA-Z]/.test(word)) return word;
+          return word.charAt(0).toUpperCase() + word.slice(1);
+        })
+        .join(" ");
+    }
+
+    function formatPaycheckAnchor(label, date) {
+      if (label && date) return `${label} (${formatDate(date)})`;
+      if (label) return label;
+      if (date) return formatDate(date);
+      return "Paycheck window";
+    }
+
+    function paycheckInterpretation(rows, paycheckEntry) {
+      const anchorSource = paycheckEntry?.date;
+      const label = paycheckEntry?.label || "";
+      const dateText = anchorSource ? formatPaycheckAnchor(label || "This paycheck window", anchorSource) : "This paycheck window";
+
+      if (!rows.length) {
+        return "No bills are currently assigned to this paycheck window.";
+      }
+
+      const hasInfrastructure = rows.some((row) => row.category === "Housing" || row.category === "Utilities");
+      const unprotectedCount = rows.filter((row) => row.protected === "no").length;
+      const arrangementCount = rows.filter((row) => row.arrangement === "yes").length;
+
+      if (hasInfrastructure && unprotectedCount === 0) {
+        return `${dateText} carries key infrastructure protections.`;
+      }
+
+      if (rows.length >= 4 || unprotectedCount >= 2) {
+        return `${dateText} includes several scheduled obligations that may require closer sequencing.`;
+      }
+
+      if (arrangementCount > 0) {
+        return `${dateText} includes active protections that may need careful follow-through.`;
+      }
+
+      if (rows.length <= 2) {
+        return `${dateText} appears lighter and may support flexibility.`;
+      }
+
+      return `${dateText} appears manageable overall with a moderate execution load this cycle.`;
+    }
+
+    function renderPaycheckItems(container, rows) {
+      container.innerHTML = "";
+
+      if (!rows.length) {
+        container.innerHTML = "<p>No obligations are currently mapped to this paycheck window.</p>";
+        return;
+      }
+
+      rows.forEach((row) => {
+        const item = document.createElement("section");
+        item.className = "paycheck-item";
+        item.innerHTML = `
+          <strong>${formatTitleLike(row.name)}</strong>
+          <ul>
+            <li>Category: ${row.category || "Not entered"}</li>
+            <li>Due date: ${formatDate(row.dueDate)}</li>
+            <li>Statement / Amount Due: ${formatMoney(row.statementAmountDue)}</li>
+            <li>Minimum Required: ${formatMoney(row.minimumRequired)}</li>
+            <li>Planned Payment This Cycle: ${formatMoney(row.plannedPayment)}</li>
+            <li>Draft source / account: ${row.draftSource || "Not entered"}</li>
+            <li>Protected this cycle: ${row.protected ? row.protected.charAt(0).toUpperCase() + row.protected.slice(1) : "Not entered"}</li>
+            <li>Hardship or protective arrangement active: ${row.arrangement ? row.arrangement.charAt(0).toUpperCase() + row.arrangement.slice(1) : "Not entered"}</li>
+            <li>Notes: ${row.notes || "None entered"}</li>
+          </ul>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function renderPaycheckView(rows, paycheckEntries) {
+      Object.entries(paycheckTargets).forEach(([label, target]) => {
+        const groupedRows = rows.filter((row) => row.paycheckWindow === label);
+        const paycheckEntry = paycheckEntries.find((entry) => entry.label === label);
+        const prefixParts = [];
+
+        if (paycheckEntry?.account) {
+          prefixParts.push(`Deposit account: ${paycheckEntry.account}`);
+        }
+
+        if (paycheckEntry?.notes) {
+          prefixParts.push(paycheckEntry.notes);
+        }
+
+        target.interpretation.textContent = paycheckInterpretation(groupedRows, paycheckEntry);
+        if (prefixParts.length) {
+          target.interpretation.textContent += ` ${prefixParts.join(". ")}.`;
+        }
+        renderPaycheckItems(target.items, groupedRows);
+      });
+
+      paycheckView.classList.add("visible");
+    }
+
+    function renderCalendarView(rows, paycheckEntries) {
+      const parsedMonth = parseMonthSelection(mappedMonthSelect.value, mappedYearSelect.value);
+      const mappedMonthLabel = parsedMonth ? formatMonthLabel(parsedMonth.monthNumber, parsedMonth.year) : "";
+      calendarDebug.textContent = `Mapped month value: ${mappedMonthLabel || "(blank)"}`;
+
+      if (!parsedMonth) {
+        calendarTitle.textContent = "";
+        calendarHeader.innerHTML = "";
+        calendarBody.innerHTML = '<div class="calendar-day" style="grid-column: 1 / -1;">Select a month above and generate the summary to view the calendar.</div>';
+        calendarView.classList.add("visible");
+        return;
+      }
+
+      const { year, monthNumber, monthIndex } = parsedMonth;
+      const firstDay = new Date(year, monthIndex, 1);
+      const daysInMonth = new Date(year, monthNumber, 0).getDate();
+      const startWeekday = firstDay.getDay();
+      const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      calendarTitle.textContent = mappedMonthLabel;
+
+      const paycheckByDate = new Map();
+      const paycheckMarkerDates = new Set();
+      paycheckEntries.forEach((entry) => {
+        if (!entry.date) return;
+        const key = entry.date;
+        const items = paycheckByDate.get(key) || [];
+        items.push(formatPaycheckAnchor(entry.label, entry.date));
+        paycheckByDate.set(key, items);
+        paycheckMarkerDates.add(key);
+      });
+
+      const billsByDate = new Map();
+      rows.forEach((row) => {
+        if (!row.dueDate) return;
+        const items = billsByDate.get(row.dueDate) || [];
+        items.push(formatTitleLike(row.name));
+        billsByDate.set(row.dueDate, items);
+      });
+
+      calendarHeader.innerHTML = "";
+      weekdays.forEach((day) => {
+        const headerCell = document.createElement("div");
+        headerCell.className = "calendar-weekday";
+        headerCell.textContent = day;
+        calendarHeader.appendChild(headerCell);
+      });
+
+      calendarBody.innerHTML = "";
+
+      for (let cellIndex = 0; cellIndex < 42; cellIndex += 1) {
+        const dayNumber = cellIndex - startWeekday + 1;
+        const cell = document.createElement("div");
+        cell.className = "calendar-day";
+
+        if (dayNumber < 1 || dayNumber > daysInMonth) {
+          cell.classList.add("muted");
+          calendarBody.appendChild(cell);
+          continue;
+        }
+
+        const isoDate = `${year}-${String(monthNumber).padStart(2, "0")}-${String(dayNumber).padStart(2, "0")}`;
+        const paycheckItems = paycheckByDate.get(isoDate) || [];
+        const billItems = billsByDate.get(isoDate) || [];
+        const hasPaycheckMarker = paycheckMarkerDates.has(isoDate);
+        const markers = `${hasPaycheckMarker ? "🟢" : ""}${billItems.length ? "🔵" : ""}`;
+        const notes = [
+          ...paycheckItems.map((item) => `Paycheck: ${item}`),
+          ...billItems.map((item) => `Due: ${item}`)
+        ];
+
+        const dayLabel = document.createElement("strong");
+        dayLabel.textContent = String(dayNumber);
+
+        const markerBlock = document.createElement("div");
+        markerBlock.className = "calendar-markers";
+        markerBlock.textContent = markers || " ";
+
+        const notesBlock = document.createElement("div");
+        notesBlock.className = "calendar-notes";
+        notesBlock.innerHTML = notes.length ? notes.join("<br>") : "&nbsp;";
+
+        cell.appendChild(dayLabel);
+        cell.appendChild(markerBlock);
+        cell.appendChild(notesBlock);
+        calendarBody.appendChild(cell);
+      }
+
+      calendarView.classList.add("visible");
+    }
+
+    function readRows() {
+      return Array.from(rowsBody.querySelectorAll("tr"))
+        .map((row) => {
+          const result = {};
+          row.querySelectorAll("[data-field]").forEach((field) => {
+            const key = field.dataset.field;
+            result[key] = field.value.trim();
+          });
+          return result;
+        })
+        .filter((row) => Object.values(row).some((value) => value !== ""));
+    }
+
+    function readPaycheckRows() {
+      return Array.from(paycheckRowsBody.querySelectorAll("tr"))
+        .map((row) => {
+          const result = {};
+          row.querySelectorAll("[data-paycheck-field]").forEach((field) => {
+            const key = field.dataset.paycheckField;
+            result[key] = field.value.trim();
+          });
+          return result;
+        })
+        .filter((row) => Object.values(row).some((value) => value !== ""));
+    }
+
+    function buildAssessment(rows) {
+      const housing = rows.filter((row) => row.category === "Housing");
+      const utilities = rows.filter((row) => row.category === "Utilities");
+      const unprotected = rows.filter((row) => row.protected === "no");
+      const arrangements = rows.filter((row) => row.arrangement === "yes");
+      const checkCounts = {
+        "Check 1": rows.filter((row) => row.paycheckWindow === "Check 1").length,
+        "Check 2": rows.filter((row) => row.paycheckWindow === "Check 2").length,
+        "Check 3 / Other": rows.filter((row) => row.paycheckWindow === "Check 3 / Other").length
+      };
+
+      const heaviestWindow = Object.entries(checkCounts).sort((a, b) => b[1] - a[1])[0];
+      const coreUnprotected = [...housing, ...utilities].filter((row) => row.protected === "no").length;
+
+      if (coreUnprotected > 0) {
+        return "This month’s map suggests the first execution step is protecting housing and utilities clearly. Once core infrastructure is held, the rest of the month can be sequenced with more stability.";
+      }
+
+      if (heaviestWindow[1] >= 4 && unprotected.length > 0) {
+        return "This month appears workable, but one paycheck window is carrying a heavier share of execution. A calm containment focus can help protect core bills first and reduce coordination strain across the rest of the cycle.";
+      }
+
+      if (arrangements.length > 0) {
+        return "This month includes active protections that are helping hold the system together. The priority now is follow-through, timing clarity, and keeping protected accounts in good standing for the current cycle.";
+      }
+
+      return "This month appears reasonably structured for execution. The main task now is to keep the order clear, protect the essentials, and follow the plan consistently across the cycle.";
+    }
+
+    function generateSummary() {
+      const rows = readRows();
+      const paycheckEntries = readPaycheckRows();
+      const parsedMonth = parseMonthSelection(mappedMonthSelect.value, mappedYearSelect.value);
+      const timingSetup = {
+        month: parsedMonth ? formatMonthLabel(parsedMonth.monthNumber, parsedMonth.year) : ""
+      };
+
+      if (!rows.length) {
+        window.alert("Please enter at least one bill or obligation before generating the summary.");
+        return;
+      }
+
+      const protection = [];
+      const load = [];
+      const protections = [];
+      const focus = [];
+
+      const housing = rows.filter((row) => row.category === "Housing");
+      const utilities = rows.filter((row) => row.category === "Utilities");
+      const arrangements = rows.filter((row) => row.arrangement === "yes");
+      const unprotected = rows.filter((row) => row.protected === "no");
+      const notCurrentFocus = rows.filter((row) => row.notes.toLowerCase().includes("current"));
+
+      if (housing.length) {
+        const protectedHousing = housing.filter((row) => row.protected === "yes").length;
+        protection.push(`${protectedHousing} of ${housing.length} housing obligation(s) are marked protected this cycle.`);
+      } else {
+        protection.push("No housing entries were added to this month’s map.");
+      }
+
+      if (utilities.length) {
+        const protectedUtilities = utilities.filter((row) => row.protected === "yes").length;
+        protection.push(`${protectedUtilities} of ${utilities.length} utility obligation(s) are marked protected this cycle.`);
+      } else {
+        protection.push("No utility entries were added to this month’s map.");
+      }
+
+      const checkGroups = [
+        { label: "Check 1", rows: rows.filter((row) => row.paycheckWindow === "Check 1") },
+        { label: "Check 2", rows: rows.filter((row) => row.paycheckWindow === "Check 2") },
+        { label: "Check 3 / Other", rows: rows.filter((row) => row.paycheckWindow === "Check 3 / Other") }
+      ];
+
+      const heaviestWindow = [...checkGroups].sort((a, b) => b.rows.length - a.rows.length)[0];
+      const mappedMonth = timingSetup.month;
+
+      function getPaycheckAnchor(label) {
+        const paycheckEntry = paycheckEntries.find((entry) => entry.label === label);
+        if (paycheckEntry?.date) return formatDate(paycheckEntry.date);
+        return "";
+      }
+
+      if (heaviestWindow.rows.length) {
+        const anchor = getPaycheckAnchor(heaviestWindow.label);
+        const prefix = anchor ? `${heaviestWindow.label} (${anchor})` : heaviestWindow.label;
+        load.push(`${prefix} currently carries the most listed obligations this month with ${heaviestWindow.rows.length} item(s).`);
+      }
+
+      checkGroups.forEach((group) => {
+        if (group.rows.length) {
+          const anchor = getPaycheckAnchor(group.label);
+          const prefix = anchor ? `${group.label} (${anchor})` : group.label;
+          load.push(`${prefix} includes ${group.rows.length} mapped obligation(s).`);
+        }
+      });
+
+      if (mappedMonth) {
+        protection.unshift(`This map is anchored to ${mappedMonth}.`);
+      }
+
+      arrangements.forEach((row) => {
+        protections.push(`${row.name || "Unnamed obligation"} has a hardship or protective arrangement marked active.`);
+      });
+
+      rows.filter((row) => row.protected === "yes").forEach((row) => {
+        if (row.category === "Housing" || row.category === "Utilities") {
+          protections.push(`${row.name || "Unnamed obligation"} is marked protected this cycle.`);
+        }
+      });
+
+      if (unprotected.some((row) => row.category === "Housing" || row.category === "Utilities")) {
+        focus.push("Protect housing and utilities first before expanding attention to the rest of the cycle.");
+      } else if (heaviestWindow.rows.length >= 4) {
+        focus.push(`Reduce execution compression inside ${heaviestWindow.label} by confirming timing, draft source, and protection status for each major obligation.`);
+      } else if (arrangements.length) {
+        focus.push("Maintain active protections carefully and keep each protected account aligned with its required terms this cycle.");
+      } else if (unprotected.length) {
+        focus.push("Review the unprotected obligations and decide which items need clearer containment coverage this month.");
+      } else {
+        focus.push("Maintain the current structure and follow through consistently across each paycheck window.");
+      }
+
+      if (notCurrentFocus.length) {
+        focus.push("Some notes suggest current-status recovery work is active, so keep those accounts visible in the execution order this month.");
+      }
+
+      setList(protectionList, protection, "No infrastructure protection order was identified from the current entries.");
+      setList(loadList, load, "No paycheck window load was identified from the current entries.");
+      setList(protectionsList, protections, "No active protections were identified in the current entries.");
+      setList(focusList, focus, "No monthly execution focus was identified from the current entries.");
+
+      assessmentText.textContent = buildAssessment(rows);
+      summary.classList.add("visible");
+      renderPaycheckView(rows, paycheckEntries);
+      renderCalendarView(rows, paycheckEntries);
+      summary.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function resetAll() {
+      rowsBody.innerHTML = "";
+      paycheckRowsBody.innerHTML = "";
+      addRow();
+      addPaycheckRow();
+      summary.classList.remove("visible");
+      paycheckView.classList.remove("visible");
+      calendarView.classList.remove("visible");
+      calendarTitle.textContent = "";
+      calendarDebug.textContent = "";
+      calendarHeader.innerHTML = "";
+      calendarBody.innerHTML = "";
+      mappedMonthSelect.value = "";
+      mappedYearSelect.value = "";
+    }
+
+    document.getElementById("add-row-btn").addEventListener("click", () => addRow());
+    document.getElementById("add-paycheck-row-btn").addEventListener("click", () => addPaycheckRow());
+    document.getElementById("generate-btn").addEventListener("click", generateSummary);
+    document.getElementById("reset-btn").addEventListener("click", resetAll);
+
+    addPaycheckRow();
+    addRow();
+    addRow();
+  </script>
+</body>
+</html>

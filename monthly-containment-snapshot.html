@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monthly Containment Snapshot</title>
+  <style>
+    :root {
+      --bg: #f7f2ea;
+      --panel: #fffaf4;
+      --panel-soft: #f1e4d3;
+      --text: #2f2a25;
+      --muted: #6f6458;
+      --line: #d8c8b4;
+      --accent: #7a5230;
+      --accent-soft: #eddcc7;
+      --green: #396445;
+      --gold: #8e6425;
+      --rose: #8d4949;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, #fffdf8 0, #fffdf8 18%, transparent 19%),
+        linear-gradient(180deg, #f4e8d7 0%, var(--bg) 32%, #efe4d6 100%);
+    }
+
+    .wrap {
+      width: min(960px, calc(100% - 32px));
+      margin: 28px auto 48px;
+    }
+
+    .hero,
+    .panel,
+    .summary-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 14px 28px rgba(78, 53, 29, 0.08);
+    }
+
+    .hero {
+      padding: 28px;
+      margin-bottom: 24px;
+      background:
+        linear-gradient(135deg, rgba(122, 82, 48, 0.08), rgba(255, 255, 255, 0)),
+        var(--panel);
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0 0 12px;
+      line-height: 1.15;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 4vw, 3rem);
+    }
+
+    p {
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    .hero p,
+    .panel > p,
+    .note,
+    .assessment p {
+      color: var(--muted);
+    }
+
+    .panel {
+      padding: 24px;
+    }
+
+    .question-list {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .question {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      background: #fffdf9;
+    }
+
+    .question-label {
+      display: block;
+      margin-bottom: 12px;
+      font-size: 1rem;
+    }
+
+    .answer-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .answer-option {
+      position: relative;
+    }
+
+    .answer-option input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .answer-option span {
+      display: inline-block;
+      min-width: 86px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      cursor: pointer;
+      transition: 140ms ease;
+    }
+
+    .answer-option input:checked + span {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 20px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .primary {
+      background: var(--accent);
+      color: #fffaf4;
+    }
+
+    .secondary {
+      background: var(--panel-soft);
+      color: var(--text);
+    }
+
+    .summary {
+      display: none;
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .summary.visible {
+      display: grid;
+    }
+
+    .summary-card {
+      padding: 20px;
+    }
+
+    .assessment {
+      padding: 22px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .summary-card ul {
+      margin: 12px 0 0;
+      padding-left: 20px;
+    }
+
+    .summary-card li + li {
+      margin-top: 8px;
+    }
+
+    .priorities h3 {
+      color: var(--green);
+    }
+
+    .pressure h3 {
+      color: var(--rose);
+    }
+
+    .supports h3,
+    .focus h3 {
+      color: var(--gold);
+    }
+
+    .note {
+      margin-top: 18px;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 760px) {
+      .wrap {
+        width: min(100% - 20px, 960px);
+        margin-top: 16px;
+      }
+
+      .hero,
+      .panel,
+      .summary-card,
+      .assessment {
+        border-radius: 16px;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1>Monthly Containment Snapshot</h1>
+      <p>
+        Answer 10 quick questions to check this month’s containment operations, identify what needs attention
+        this cycle, and keep the household system holding through the current month.
+      </p>
+    </section>
+
+    <section class="panel">
+      <h2>Current Cycle Check-In</h2>
+      <p>
+        This is a monthly containment operations check-in for households in recovery or transition. It is not
+        budgeting, forecasting, or financial advice.
+      </p>
+
+      <form id="snapshot-form" class="question-list"></form>
+
+      <div class="actions">
+        <button type="button" class="primary" id="generate-btn">Generate Snapshot</button>
+        <button type="button" class="secondary" id="reset-btn">Reset</button>
+      </div>
+
+      <section id="summary" class="summary" aria-live="polite">
+        <div class="summary-card assessment">
+          <h2>Cycle Summary</h2>
+          <p id="assessment-text"></p>
+        </div>
+
+        <div class="summary-grid">
+          <article class="summary-card priorities">
+            <h3>Infrastructure Priorities</h3>
+            <ul id="priorities-list"></ul>
+          </article>
+
+          <article class="summary-card pressure">
+            <h3>Payment Pressure Points</h3>
+            <ul id="pressure-list"></ul>
+          </article>
+
+          <article class="summary-card supports">
+            <h3>Containment Supports in Use</h3>
+            <ul id="supports-list"></ul>
+          </article>
+
+          <article class="summary-card focus">
+            <h3>This Cycle's Focus</h3>
+            <ul id="focus-list"></ul>
+          </article>
+        </div>
+
+        <p class="note">
+          This tool is a simple containment check-in and not legal, credit, or financial advice.
+        </p>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const questions = [
+      {
+        id: "dueCount",
+        label: "How many bills or obligations are due this cycle?",
+        type: "choice",
+        section: "pressure",
+        options: [
+          { value: "1to3", label: "1 to 3" },
+          { value: "4to6", label: "4 to 6" },
+          { value: "7plus", label: "7 or more" }
+        ]
+      },
+      {
+        id: "utilitiesRisk",
+        label: "Are any utilities at risk this cycle?",
+        type: "yesno",
+        section: "priorities",
+        positive: "Utilities look protected for this cycle.",
+        negative: "Utility protection may need active attention this cycle."
+      },
+      {
+        id: "housingProtected",
+        label: "Is mortgage or rent currently protected?",
+        type: "yesno",
+        section: "priorities",
+        positive: "Housing appears protected this cycle.",
+        negative: "Housing protection may need attention this cycle."
+      },
+      {
+        id: "debtMinimumRisk",
+        label: "Are any minimum debt payments at risk this cycle?",
+        type: "yesno",
+        section: "pressure",
+        positive: "Minimum debt payments do not appear to be at risk this cycle.",
+        negative: "One or more minimum debt payments may be at risk this cycle."
+      },
+      {
+        id: "arrangementsActive",
+        label: "Are any hardship or protective payment arrangements currently active?",
+        type: "yesno",
+        section: "supports",
+        positive: "Protective or hardship arrangements are active this cycle.",
+        negative: "No protective or hardship arrangements are currently active."
+      },
+      {
+        id: "clusteredWeek",
+        label: "Are multiple bills heavily clustered in the same week?",
+        type: "yesno",
+        section: "pressure",
+        positive: "Bill timing does not appear heavily clustered in one week.",
+        negative: "Multiple bills appear to be clustered into the same week."
+      },
+      {
+        id: "billPayStructure",
+        label: "Is a separate bill-pay structure in place?",
+        type: "yesno",
+        section: "supports",
+        positive: "A separate bill-pay structure is in place.",
+        negative: "A separate bill-pay structure is not yet in place."
+      },
+      {
+        id: "timingBuffer",
+        label: "Is enough buffer available to safely cover drafts or auto-pay timing this cycle?",
+        type: "yesno",
+        section: "supports",
+        positive: "A timing buffer appears available for drafts or auto-pay this cycle.",
+        negative: "A safe timing buffer for drafts or auto-pay may be limited this cycle."
+      },
+      {
+        id: "unexpectedExpense",
+        label: "Is an unusual or unexpected expense expected this cycle?",
+        type: "yesno",
+        section: "pressure",
+        positive: "No unusual or unexpected expense is currently expected this cycle.",
+        negative: "An unusual or unexpected expense is expected this cycle."
+      },
+      {
+        id: "focusArea",
+        label: "What is the main containment focus this cycle?",
+        type: "choice",
+        section: "focus",
+        options: [
+          { value: "housingUtilities", label: "Preserve housing and utilities" },
+          { value: "preventDelinquency", label: "Prevent new delinquency" },
+          { value: "creditPressure", label: "Manage credit/utilization pressure" },
+          { value: "hardshipCompliance", label: "Maintain hardship compliance" },
+          { value: "rebuildBuffer", label: "Rebuild basic buffer" }
+        ]
+      }
+    ];
+
+    const form = document.getElementById("snapshot-form");
+    const summary = document.getElementById("summary");
+    const assessmentText = document.getElementById("assessment-text");
+    const prioritiesList = document.getElementById("priorities-list");
+    const pressureList = document.getElementById("pressure-list");
+    const supportsList = document.getElementById("supports-list");
+    const focusList = document.getElementById("focus-list");
+
+    function renderQuestions() {
+      form.innerHTML = questions.map((question, index) => {
+        const options = question.type === "yesno"
+          ? [
+              { value: "yes", label: "Yes" },
+              { value: "no", label: "No" }
+            ]
+          : question.options;
+
+        return `
+          <fieldset class="question">
+            <legend class="question-label">${index + 1}. ${question.label}</legend>
+            <div class="answer-row">
+              ${options.map((option) => `
+                <label class="answer-option">
+                  <input type="radio" name="${question.id}" value="${option.value}">
+                  <span>${option.label}</span>
+                </label>
+              `).join("")}
+            </div>
+          </fieldset>
+        `;
+      }).join("");
+    }
+
+    function setList(list, items, fallback) {
+      list.innerHTML = "";
+
+      if (!items.length) {
+        list.innerHTML = `<li>${fallback}</li>`;
+        return;
+      }
+
+      items.forEach((text) => {
+        const item = document.createElement("li");
+        item.textContent = text;
+        list.appendChild(item);
+      });
+    }
+
+    function buildAssessment(answers) {
+      let pressureCount = 0;
+      let supportCount = 0;
+      let priorityRisk = 0;
+      const infrastructureProtected =
+        answers.housingProtected === "yes" &&
+        answers.utilitiesRisk === "no";
+      const hasTimingBuffer = answers.timingBuffer === "yes";
+
+      if (answers.utilitiesRisk === "yes") {
+        pressureCount += 1;
+        priorityRisk += 1;
+      }
+
+      if (answers.housingProtected === "no") {
+        pressureCount += 1;
+        priorityRisk += 1;
+      }
+
+      if (answers.debtMinimumRisk === "yes") pressureCount += 1;
+      if (answers.clusteredWeek === "yes" && answers.timingBuffer === "no") pressureCount += 1;
+      if (answers.unexpectedExpense === "yes") pressureCount += 1;
+
+      if (answers.arrangementsActive === "yes") supportCount += 1;
+      if (answers.billPayStructure === "yes") supportCount += 1;
+      if (answers.timingBuffer === "yes") supportCount += 1;
+
+      if (answers.dueCount === "4to6") pressureCount += 1;
+      if (answers.dueCount === "7plus") pressureCount += 2;
+
+      if (infrastructureProtected && hasTimingBuffer && pressureCount >= 4) {
+        return "This cycle includes several obligations, but infrastructure protections and containment supports appear to be in place. The main task this month is coordinated follow-through so the household system keeps holding.";
+      }
+
+      if (priorityRisk >= 2) {
+        return "This cycle appears to need close containment attention around core household infrastructure. The most helpful focus is protecting essentials first, then reducing pressure where the month feels most compressed.";
+      }
+
+      if (pressureCount >= 4 && supportCount >= 2) {
+        return "This cycle includes several moving parts, and there are supports in place that can help the household keep holding. The priority is steady follow-through on the protections already being used.";
+      }
+
+      if (pressureCount >= 4) {
+        return "This cycle may feel tight in several places. A calm containment focus can help protect the most important obligations and reduce the chance of new instability this month.";
+      }
+
+      if (supportCount >= 2) {
+        return "This cycle appears relatively contained, with several supports already helping hold the month together. The focus now is staying organized and protecting the current footing.";
+      }
+
+      return "This cycle appears manageable overall, with only a few areas needing attention. A simple month-by-month containment focus can help keep the household system steady.";
+    }
+
+    function generateSummary() {
+      const answers = {};
+
+      for (const question of questions) {
+        const selected = form.querySelector(`input[name="${question.id}"]:checked`);
+        if (!selected) {
+          window.alert("Please answer all questions before generating the snapshot.");
+          return;
+        }
+        answers[question.id] = selected.value;
+      }
+
+      const priorities = [];
+      const pressure = [];
+      const supports = [];
+      const focus = [];
+
+      if (answers.housingProtected === "yes") {
+        priorities.push("Housing appears protected this cycle.");
+      } else {
+        priorities.push("Housing protection may need attention this cycle.");
+      }
+
+      if (answers.utilitiesRisk === "yes") {
+        priorities.push("Utilities may need active protection this cycle.");
+      } else {
+        priorities.push("Utilities appear protected this cycle.");
+      }
+
+      if (answers.dueCount === "1to3") {
+        pressure.push("This cycle has a lighter number of bills or obligations due.");
+      } else if (answers.dueCount === "4to6") {
+        pressure.push("This cycle has a moderate number of bills or obligations due.");
+      } else {
+        pressure.push("This cycle includes several obligations that require coordinated timing, but this does not necessarily indicate instability.");
+      }
+
+      if (answers.debtMinimumRisk === "yes") {
+        pressure.push("One or more minimum debt payments may be at risk this cycle.");
+      } else {
+        pressure.push("Minimum debt payments appear covered for this cycle.");
+      }
+
+      if (answers.clusteredWeek === "yes" && answers.timingBuffer === "no") {
+        pressure.push("Multiple bills appear clustered into the same week.");
+      } else if (answers.clusteredWeek === "yes" && answers.timingBuffer === "yes") {
+        supports.push("Several bills are clustered into the same week, but buffer coverage appears to support the timing.");
+      }
+
+      if (answers.unexpectedExpense === "yes") {
+        pressure.push("An unusual or unexpected expense is expected this cycle.");
+      }
+
+      if (answers.arrangementsActive === "yes") {
+        supports.push("Protective or hardship arrangements are active this cycle.");
+      }
+
+      if (answers.billPayStructure === "yes") {
+        supports.push("A separate bill-pay structure is in place.");
+      }
+
+      if (answers.timingBuffer === "yes") {
+        supports.push("A timing buffer appears available for drafts or auto-pay this cycle.");
+      }
+
+      if (answers.arrangementsActive === "no" && answers.debtMinimumRisk === "yes") {
+        supports.push("Protective arrangements may be worth reviewing if debt payment pressure increases this cycle.");
+      }
+
+      const focusMap = {
+        housingUtilities: "The main containment focus this cycle is preserving housing and utilities.",
+        preventDelinquency: "The main containment focus this cycle is preventing new delinquency.",
+        creditPressure: "The main containment focus this cycle is managing credit or utilization pressure.",
+        hardshipCompliance: "The main containment focus this cycle is maintaining hardship compliance.",
+        rebuildBuffer: "The main containment focus this cycle is rebuilding a basic buffer."
+      };
+
+      focus.push(focusMap[answers.focusArea]);
+
+      setList(prioritiesList, priorities, "No immediate infrastructure priorities were identified.");
+      setList(pressureList, pressure, "No major payment pressure points were identified for this cycle.");
+      setList(supportsList, supports, "No containment supports were identified yet for this cycle.");
+      setList(focusList, focus, "No cycle focus was identified.");
+
+      assessmentText.textContent = buildAssessment(answers);
+      summary.classList.add("visible");
+      summary.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function resetForm() {
+      form.reset();
+      summary.classList.remove("visible");
+    }
+
+    document.getElementById("generate-btn").addEventListener("click", generateSummary);
+    document.getElementById("reset-btn").addEventListener("click", resetForm);
+
+    renderQuestions();
+  </script>
+</body>
+</html>
