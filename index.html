@@ -1,775 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Financial Containment Mapper</title>
-  <style>
-    :root {
-      --bg: #f6f1e8;
-      --panel: #fffaf2;
-      --panel-strong: #f3e5cf;
-      --text: #2e2a26;
-      --muted: #6d6258;
-      --line: #d8c7ae;
-      --accent: #7b4b2a;
-      --accent-soft: #ecd8c1;
-      --good: #2f6b3b;
-      --warn: #9a6221;
-      --bad: #8f2e2e;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Financial Containment Operating System (FCOS)</title>
 
-    * {
-      box-sizing: border-box;
-    }
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background-color: #fafafa;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    text-align: center;
+}
 
-    body {
-      margin: 0;
-      font-family: Georgia, "Times New Roman", serif;
-      background:
-        radial-gradient(circle at top left, #fffaf3 0, #fffaf3 18%, transparent 19%),
-        linear-gradient(180deg, #f3e5d3 0%, var(--bg) 30%, #efe5d7 100%);
-      color: var(--text);
-    }
+.container {
+    max-width: 600px;
+}
 
-    .wrap {
-      width: min(960px, calc(100% - 32px));
-      margin: 32px auto 48px;
-    }
+h1 {
+    font-size: 28px;
+    margin-bottom: 10px;
+}
 
-    .hero,
-    .panel,
-    .summary-card {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      box-shadow: 0 14px 30px rgba(72, 45, 20, 0.08);
-    }
+.subtitle {
+    color: #555;
+    margin-bottom: 30px;
+}
 
-    .hero {
-      padding: 28px;
-      margin-bottom: 24px;
-      background:
-        linear-gradient(135deg, rgba(123, 75, 42, 0.08), rgba(255, 255, 255, 0)),
-        var(--panel);
-    }
+.button {
+    display: block;
+    margin: 10px auto;
+    padding: 12px 20px;
+    width: 260px;
+    text-decoration: none;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    color: black;
+}
 
-    h1,
-    h2,
-    h3 {
-      margin: 0 0 12px;
-      font-weight: 700;
-      line-height: 1.15;
-    }
+.button:hover {
+    background-color: #f2f2f2;
+}
 
-    h1 {
-      font-size: clamp(2rem, 4vw, 3rem);
-    }
+.disabled {
+    color: #999;
+    border-style: dashed;
+}
 
-    p {
-      margin: 0;
-      line-height: 1.6;
-    }
-
-    .hero p {
-      color: var(--muted);
-      max-width: 60ch;
-      font-size: 1.05rem;
-    }
-
-    .panel {
-      padding: 24px;
-    }
-
-    .question-list {
-      display: grid;
-      gap: 14px;
-      margin-top: 18px;
-    }
-
-    .question-group {
-      display: grid;
-      gap: 14px;
-    }
-
-    .group-title {
-      margin: 8px 0 0;
-      font-size: 1.2rem;
-    }
-
-    .group-copy {
-      color: var(--muted);
-      margin-bottom: 4px;
-    }
-
-    .question {
-      padding: 16px;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: #fffdf9;
-    }
-
-    .question-label {
-      display: block;
-      font-size: 1rem;
-      margin-bottom: 12px;
-    }
-
-    .answer-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .answer-option {
-      position: relative;
-    }
-
-    .answer-option input {
-      position: absolute;
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .answer-option span {
-      display: inline-block;
-      min-width: 72px;
-      padding: 10px 16px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      background: #fff;
-      color: var(--text);
-      text-align: center;
-      cursor: pointer;
-      transition: 140ms ease;
-    }
-
-    .answer-option input:checked + span {
-      border-color: var(--accent);
-      background: var(--accent-soft);
-      color: var(--accent);
-      font-weight: 700;
-    }
-
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 24px;
-    }
-
-    button {
-      border: 0;
-      border-radius: 999px;
-      padding: 12px 20px;
-      font: inherit;
-      cursor: pointer;
-    }
-
-    .primary {
-      background: var(--accent);
-      color: #fffaf5;
-    }
-
-    .secondary {
-      background: var(--panel-strong);
-      color: var(--text);
-    }
-
-    .summary {
-      margin-top: 24px;
-      display: none;
-      gap: 16px;
-    }
-
-    .summary.visible {
-      display: grid;
-    }
-
-    .assessment {
-      padding: 22px;
-    }
-
-    .assessment p {
-      color: var(--muted);
-      margin-top: 6px;
-    }
-
-    .health-meter {
-      margin-top: 16px;
-      padding: 14px 16px;
-      border-radius: 14px;
-      border: 1px solid var(--line);
-      background: #fffdf9;
-    }
-
-    .health-label {
-      font-size: 1.15rem;
-      font-weight: 700;
-      color: var(--accent);
-    }
-
-    .health-guidance {
-      margin-top: 6px;
-      color: var(--muted);
-    }
-
-    .legend {
-      margin-top: 14px;
-      padding-top: 14px;
-      border-top: 1px solid var(--line);
-    }
-
-    .legend-item + .legend-item {
-      margin-top: 10px;
-    }
-
-    .legend-item strong {
-      display: block;
-      color: var(--text);
-      margin-bottom: 4px;
-    }
-
-    .assessment strong {
-      color: var(--text);
-    }
-
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-    }
-
-    .summary-card {
-      padding: 20px;
-    }
-
-    .summary-card h3 {
-      font-size: 1.15rem;
-    }
-
-    .summary-card ul {
-      margin: 12px 0 0;
-      padding-left: 20px;
-    }
-
-    .summary-card li + li {
-      margin-top: 8px;
-    }
-
-    .anchors h3 {
-      color: var(--good);
-    }
-
-    .containment h3 {
-      color: var(--warn);
-    }
-
-    .fragility h3 {
-      color: var(--bad);
-    }
-
-    .note {
-      margin-top: 18px;
-      color: var(--muted);
-      font-size: 0.95rem;
-    }
-
-    @media (max-width: 760px) {
-      .wrap {
-        width: min(100% - 20px, 960px);
-        margin-top: 16px;
-      }
-
-      .hero,
-      .panel,
-      .summary-card,
-      .assessment {
-        border-radius: 16px;
-      }
-
-      .summary-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+.footer {
+    margin-top: 40px;
+    font-size: 14px;
+    color: #777;
+}
+</style>
 </head>
+
 <body>
-  <main class="wrap">
-    <section class="hero">
-      <h1>Financial Containment Mapper</h1>
-      <p>
-        Answer 14 yes-or-no questions to get a plain-language snapshot of current household stability,
-        support structures, and near-term durability.
-      </p>
-    </section>
 
-    <section class="panel">
-      <h2>Household Stability Check</h2>
-      <p>Select one answer for each item, then generate the summary.</p>
-      <p class="note">
-        For income sufficiency, answer based on ongoing income that can reliably cover core obligations on a repeatable basis, not on temporary lump-sum support, tax refunds, bonuses, or short-term timing relief.
-      </p>
+<div class="container">
 
-      <form id="mapper-form" class="question-list"></form>
+<h1>Financial Containment Operating System (FCOS)</h1>
 
-      <div class="actions">
-        <button type="button" class="primary" id="generate-btn">Generate Summary</button>
-        <button type="button" class="secondary" id="reset-btn">Reset</button>
-      </div>
+<p class="subtitle">
+A stabilization-first workflow system for monthly containment planning and credit continuity tracking.
+</p>
 
-      <section id="summary" class="summary" aria-live="polite">
-        <div class="summary-card assessment">
-          <h2>Assessment Summary</h2>
-          <p id="assessment-text"></p>
-          <div class="health-meter">
-            <div>Overall Stability Health</div>
-            <div class="health-label" id="health-label"></div>
-            <p class="health-guidance" id="health-guidance"></p>
-            <div class="legend">
-              <div class="legend-item">
-                <strong>Stabilizing</strong>
-                <p>Essential supports are still being built. The focus right now is reducing immediate pressure and strengthening core household anchors.</p>
-              </div>
-              <div class="legend-item">
-                <strong>Containing</strong>
-                <p>Key supports are in place and helping prevent setbacks, even if some areas still need attention. The household has meaningful protection against short-term disruption.</p>
-              </div>
-              <div class="legend-item">
-                <strong>Strengthening</strong>
-                <p>Most foundational anchors are stable. Remaining work is focused on improving flexibility and building additional breathing room.</p>
-              </div>
-              <div class="legend-item">
-                <strong>Stable</strong>
-                <p>Core anchors and supports are working together. The household has strong containment and can begin shifting energy toward long-term growth goals.</p>
-              </div>
-            </div>
-          </div>
-        </div>
+<a class="button" href="monthly-containment-snapshot.html">
+Open Monthly Containment Snapshot
+</a>
 
-        <div class="summary-grid">
-          <article class="summary-card anchors">
-            <h3>Stability Anchors</h3>
-            <ul id="anchors-list"></ul>
-          </article>
+<a class="button" href="monthly-bill-map.html">
+Open Monthly Bill Map
+</a>
 
-          <article class="summary-card containment">
-            <h3>Support Structures in Place</h3>
-            <ul id="containment-list"></ul>
-          </article>
+<a class="button" href="monthly-credit-snapshot.html">
+Open Monthly Credit Snapshot
+</a>
 
-          <article class="summary-card fragility">
-            <h3>Areas Still Stabilizing</h3>
-            <ul id="fragility-list"></ul>
-          </article>
-        </div>
+<div class="button disabled">
+Quarterly Review (coming soon)
+</div>
 
-        <p class="note">
-          This tool is a simple household check-in and not legal, financial, or crisis advice.
-        </p>
-      </section>
-    </section>
-  </main>
+<div class="button disabled">
+Annual Review (coming soon)
+</div>
 
-  <script>
-    const questions = [
-      {
-        id: "housing",
-        label: "Housing current and stable",
-        layer: "current",
-        section: "anchors",
-        positive: "Housing appears current and stable.",
-        negative: "Housing stability may still need strengthening."
-      },
-      {
-        id: "utilities",
-        label: "Utilities current",
-        layer: "current",
-        section: "anchors",
-        positive: "Utilities appear current.",
-        negative: "Utilities may still need attention to stay fully current."
-      },
-      {
-        id: "transportation",
-        label: "Reliable transportation available",
-        layer: "current",
-        section: "anchors",
-        positive: "Reliable transportation is available.",
-        negative: "Transportation reliability may still be an area to strengthen."
-      },
-      {
-        id: "incomePredictable",
-        label: "Income arrives predictably",
-        layer: "current",
-        section: "anchors",
-        positive: "Income appears to arrive predictably.",
-        negative: "Income timing may still be uneven or hard to rely on."
-      },
-      {
-        id: "incomeSufficient",
-        label: "Income is consistently sufficient to cover core monthly obligations beyond the current bill cycle",
-        layer: "current",
-        section: "anchors",
-        positive: "Ongoing income appears sufficient to cover core household obligations on a repeatable basis beyond the current bill cycle.",
-        negative: "Income may not yet be consistently sufficient to cover core household obligations beyond the current bill cycle."
-      },
-      {
-        id: "arrangements",
-        label: "Protective payment arrangements are active where possible and logical",
-        layer: "current",
-        section: "containment",
-        positive: "Protective payment arrangements appear to be active where they make sense.",
-        negative: "Protective payment arrangements may still be missing in places where they could help."
-      },
-      {
-        id: "insurance",
-        label: "Essential insurance coverage is active where needed",
-        layer: "current",
-        section: "containment",
-        positive: "Essential insurance coverage appears active where needed.",
-        negative: "Essential insurance coverage may still be missing or inactive in some areas."
-      },
-      {
-        id: "debtManaged",
-        label: "Priority bills and debt obligations are actively managed and contained",
-        layer: "current",
-        section: "containment",
-        positive: "Priority bills and debt obligations appear to be actively managed and contained.",
-        negative: "Priority bills and debt obligations may still need more active structure and containment."
-      },
-      {
-        id: "accountsCurrent",
-        label: "All priority bills and debt accounts are currently up to date by creditor/reporting status",
-        layer: "current",
-        section: "anchors",
-        positive: "Priority bills and debt accounts appear fully up to date by creditor or reporting status.",
-        negative: "Some priority bills or debt accounts are not currently up to date."
-      },
-      {
-        id: "support",
-        label: "Childcare or family support stable",
-        layer: "current",
-        section: "anchors",
-        positive: "Childcare or family support appears stable.",
-        negative: "Childcare or family support may still need strengthening."
-      },
-      {
-        id: "billPay",
-        label: "Separate bill-pay structure in place",
-        layer: "current",
-        section: "containment",
-        positive: "A separate bill-pay structure is in place.",
-        negative: "A dedicated bill-pay structure is not yet in place."
-      },
-      {
-        id: "buffer",
-        label: "At least $250 is available for a true unexpected expense",
-        layer: "current",
-        section: "anchors",
-        positive: "At least $250 appears available for a true unexpected expense.",
-        negative: "A $250 cushion for a true unexpected expense may not be available yet."
-      },
-      {
-        id: "outlook30",
-        label: "Core household stability is expected to hold over the next 30 days",
-        layer: "durability",
-        section: "anchors",
-        positive: "Short-term containment durability appears to be present over the next 30 days.",
-        negative: "Short-term household stability may still be strengthening over the next 30 days."
-      },
-      {
-        id: "outlook90",
-        label: "Core household stability is expected to hold over the next 90 days",
-        layer: "durability",
-        section: "anchors",
-        positive: "Longer-range household stability appears likely to hold over the next 90 days.",
-        negative: "Longer-range household stability may still be developing over the next 90 days."
-      }
-    ];
+<p class="footer">
+FCOS is a containment-first workflow system designed for stability, sequencing, and continuity.
+This prototype version is part of the Codex Creator Challenge build.
+</p>
 
-    const form = document.getElementById("mapper-form");
-    const summary = document.getElementById("summary");
-    const assessmentText = document.getElementById("assessment-text");
-    const healthLabel = document.getElementById("health-label");
-    const healthGuidance = document.getElementById("health-guidance");
-    const anchorsList = document.getElementById("anchors-list");
-    const containmentList = document.getElementById("containment-list");
-    const fragilityList = document.getElementById("fragility-list");
+</div>
 
-    function renderQuestions() {
-      const groups = [
-        {
-          key: "current",
-          title: "Layer 1: Current-State Questions",
-          copy: "These questions look at the household's current-day footing and support structures."
-        },
-        {
-          key: "durability",
-          title: "Layer 2: Durability Questions",
-          copy: "These questions look at whether current stability is likely to hold over the next 30 to 90 days."
-        }
-      ];
-
-      let questionNumber = 0;
-
-      form.innerHTML = groups.map((group) => {
-        const groupQuestions = questions.filter((question) => question.layer === group.key);
-        return `
-          <section class="question-group">
-            <div>
-              <h3 class="group-title">${group.title}</h3>
-              <p class="group-copy">${group.copy}</p>
-            </div>
-            ${groupQuestions.map((question) => {
-              questionNumber += 1;
-              return `
-                <fieldset class="question">
-                  <legend class="question-label">${questionNumber}. ${question.label}</legend>
-                  <div class="answer-row">
-                    <label class="answer-option">
-                      <input type="radio" name="${question.id}" value="yes">
-                      <span>Yes</span>
-                    </label>
-                    <label class="answer-option">
-                      <input type="radio" name="${question.id}" value="no">
-                      <span>No</span>
-                    </label>
-                  </div>
-                </fieldset>
-              `;
-            }).join("")}
-          </section>
-        `;
-      }).join("");
-    }
-
-    function emptyStateMessage(list, message) {
-      list.innerHTML = `<li>${message}</li>`;
-    }
-
-    function getHealthGuidance(health) {
-      if (health === "Stable") {
-        return "Core systems are working together reliably. Energy can begin shifting toward long-term growth goals.";
-      }
-
-      if (health === "Strengthening") {
-        return "Focus on extending durability and building additional flexibility.";
-      }
-
-      if (health === "Containing") {
-        return "Focus on maintaining protections while restoring sufficiency and bringing remaining accounts fully current.";
-      }
-
-      return "Focus on securing essentials and reducing immediate pressure.";
-    }
-
-    function getHealthLabel(metrics) {
-      const {
-        survivalAnchorCount,
-        supportCount,
-        accountsCurrent,
-        hasCushion,
-        outlook30,
-        outlook90,
-        pressureCount
-      } = metrics;
-
-      if (
-        survivalAnchorCount === 5 &&
-        accountsCurrent &&
-        hasCushion &&
-        outlook30 &&
-        outlook90
-      ) {
-        return "Stable";
-      }
-
-      if (
-        survivalAnchorCount >= 4 &&
-        outlook30 &&
-        supportCount >= 2 &&
-        pressureCount <= 2
-      ) {
-        return "Strengthening";
-      }
-
-      if (
-        survivalAnchorCount >= 4 &&
-        supportCount >= 2 &&
-        outlook30
-      ) {
-        return "Containing";
-      }
-
-      return "Stabilizing";
-    }
-
-    function buildAssessment(answers) {
-      let anchorCount = 0;
-      let supportCount = 0;
-      let pressureCount = 0;
-      let survivalAnchorCount = 0;
-      let hasCushion = false;
-      let accountsCurrent = false;
-      let outlook30 = false;
-      let outlook90 = false;
-      let incomeSufficient = false;
-
-      const answerMap = Object.fromEntries(
-        answers.map(({ question, value }) => [question.id, value])
-      );
-
-      answers.forEach(({ question, value }) => {
-        const isPositive = value === "yes";
-
-        if (question.section === "anchors" && isPositive) anchorCount += 1;
-        if (question.section === "containment" && isPositive) supportCount += 1;
-        if (
-          ["housing", "utilities", "transportation", "incomeSufficient", "debtManaged"].includes(question.id) &&
-          isPositive
-        ) {
-          survivalAnchorCount += 1;
-        }
-
-        if (question.id === "buffer" && value === "yes") hasCushion = true;
-        if (question.id === "accountsCurrent" && value === "yes") accountsCurrent = true;
-        if (question.id === "outlook30" && value === "yes") outlook30 = true;
-        if (question.id === "outlook90" && value === "yes") outlook90 = true;
-        if (question.id === "incomeSufficient" && value === "yes") incomeSufficient = true;
-      });
-
-      if (answerMap.accountsCurrent === "no") pressureCount += 1;
-      if (answerMap.buffer === "no") pressureCount += 1;
-      if (answerMap.outlook30 === "no") pressureCount += 1;
-      if (answerMap.outlook90 === "no") pressureCount += 1;
-      if (answerMap.incomeSufficient === "no") pressureCount += 1;
-      if (answerMap.incomePredictable === "yes" && answerMap.incomeSufficient === "no") pressureCount += 1;
-      if (answerMap.debtManaged === "yes" && answerMap.accountsCurrent === "no") pressureCount += 1;
-      if (survivalAnchorCount <= 3) pressureCount += 1;
-
-      const missingAnchors = 9 - anchorCount;
-      const health = getHealthLabel({
-        survivalAnchorCount,
-        supportCount,
-        accountsCurrent,
-        hasCushion,
-        outlook30,
-        outlook90,
-        pressureCount
-      });
-
-      if (health === "Stable") {
-        return {
-          text: "Overall, the household shows strong containment and meaningful day-to-day stability. Core anchors and support structures appear to be working together in a steady way.",
-          health
-        };
-      }
-
-      if (health === "Strengthening") {
-        return {
-          text: "Overall, the household shows a strong base in many important areas. Most core anchors appear to be in place, and shorter-term durability looks encouraging even if a few areas are still being worked through.",
-          health
-        };
-      }
-
-      if (health === "Containing") {
-        return {
-          text: "Overall, the household appears to have meaningful containment in place. Core needs are being covered in several important areas, and support structures are helping hold things steady while some durability or cushion is still building.",
-          health
-        };
-      }
-
-      if (missingAnchors >= 3) {
-        return {
-          text: "Overall, the household appears to be carrying strain across several core stability areas. The most helpful next step is to strengthen the basic anchors first, while using available supports to create more room to stabilize.",
-          health
-        };
-      }
-
-      return {
-        text: "Overall, the household is still working toward steadier footing. Some stabilizing steps may still be needed, and the support structures in place can help make that process more manageable.",
-        health
-      };
-    }
-
-    function generateSummary() {
-      const answers = questions.map((question) => {
-        const selected = form.querySelector(`input[name="${question.id}"]:checked`);
-        return {
-          question,
-          value: selected ? selected.value : null
-        };
-      });
-
-      const unanswered = answers.find((item) => !item.value);
-
-      if (unanswered) {
-        window.alert("Please answer all questions before generating the summary.");
-        return;
-      }
-
-      anchorsList.innerHTML = "";
-      containmentList.innerHTML = "";
-      fragilityList.innerHTML = "";
-
-      const answerMap = Object.fromEntries(
-        answers.map(({ question, value }) => [question.id, value])
-      );
-
-      answers.forEach(({ question, value }) => {
-        const isPositive = value === "yes";
-        const item = document.createElement("li");
-        item.textContent = isPositive ? question.positive : question.negative;
-
-        if (question.section === "anchors") {
-          if (
-            ((question.id === "accountsCurrent" || question.id === "buffer" || question.id === "outlook30") && value === "no") ||
-            (question.id === "outlook90" && value === "no") ||
-            (question.id === "incomePredictable" && value === "no") ||
-            (question.id === "incomeSufficient" && value === "no")
-          ) {
-            fragilityList.appendChild(item);
-          } else {
-            anchorsList.appendChild(item);
-          }
-          return;
-        }
-
-        if (question.section === "containment") {
-          containmentList.appendChild(item);
-          return;
-        }
-      });
-
-      if (!anchorsList.children.length) {
-        emptyStateMessage(anchorsList, "No stability anchors were identified.");
-      }
-
-      if (!containmentList.children.length) {
-        emptyStateMessage(containmentList, "No support structures were identified yet.");
-      }
-
-      if (!fragilityList.children.length) {
-        emptyStateMessage(fragilityList, "No immediate areas still stabilizing were identified.");
-      }
-
-      const assessment = buildAssessment(answers);
-      assessmentText.textContent = assessment.text;
-      healthLabel.textContent = assessment.health;
-      healthGuidance.textContent = getHealthGuidance(assessment.health);
-      summary.classList.add("visible");
-      summary.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-
-    function resetForm() {
-      form.reset();
-      summary.classList.remove("visible");
-    }
-
-    document.getElementById("generate-btn").addEventListener("click", generateSummary);
-    document.getElementById("reset-btn").addEventListener("click", resetForm);
-
-    renderQuestions();
-  </script>
 </body>
 </html>
