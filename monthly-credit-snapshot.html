@@ -192,6 +192,38 @@
       padding: 8px 12px;
     }
 
+    .availability-pill {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      font-size: 0.82rem;
+      font-weight: 600;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .availability-stable {
+      background: #e4ebe3;
+      color: #5d6c5a;
+    }
+
+    .availability-tightening {
+      background: #efe3d7;
+      color: #8b6f57;
+    }
+
+    .availability-constrained {
+      background: #ead9d3;
+      color: #8e6e66;
+    }
+
+    .availability-pending {
+      background: var(--panel-soft);
+      color: var(--muted);
+    }
+
     .summary {
       display: none;
       gap: 16px;
@@ -336,6 +368,9 @@
       <p>
         This is a stabilization tracking workspace inside FCOS. It is not budgeting, forecasting, or a payoff calculator.
       </p>
+      <p class="note">
+        Credit card account names and minimum payments can be pulled in automatically from Monthly Bill Map.
+      </p>
 
       <section class="timing-setup" aria-label="Month Setup">
         <div class="timing-field">
@@ -373,12 +408,13 @@
           <thead>
             <tr>
               <th>Account name</th>
-              <th>Statement balance</th>
-              <th>Minimum required</th>
-              <th>Planned payment this cycle</th>
-              <th>Actual payment this cycle</th>
-              <th>Account status this month</th>
-              <th>Notes</th>
+              <th>Minimum payment amount</th>
+              <th>Credit limit</th>
+              <th>Current balance</th>
+              <th>Available credit</th>
+              <th>Interest rate</th>
+              <th>Statement closing date</th>
+              <th>Account status</th>
               <th>Row</th>
             </tr>
           </thead>
@@ -600,10 +636,12 @@
   <template id="row-template">
     <tr>
       <td><input type="text" data-field="accountName" placeholder="Visa, auto loan, store card"></td>
-      <td><input type="number" data-field="statementBalance" min="0" step="0.01" placeholder="0.00"></td>
       <td><input type="number" data-field="minimumRequired" min="0" step="0.01" placeholder="0.00"></td>
-      <td><input type="number" data-field="plannedPayment" min="0" step="0.01" placeholder="0.00"></td>
-      <td><input type="number" data-field="actualPayment" min="0" step="0.01" placeholder="0.00"></td>
+      <td><input type="number" data-field="creditLimit" min="0" step="0.01" placeholder="0.00"></td>
+      <td><input type="number" data-field="currentBalance" min="0" step="0.01" placeholder="0.00"></td>
+      <td><input type="number" data-field="availableCredit" min="0" step="0.01" placeholder="0.00"></td>
+      <td><input type="text" data-field="interestRate" placeholder="APR or %"></td>
+      <td><input type="date" data-field="statementClosingDate"></td>
       <td>
         <select data-field="status">
           <option value="">Select</option>
@@ -614,14 +652,15 @@
           <option>Paid off</option>
           <option>Monitoring only</option>
         </select>
+        <div class="availability-pill availability-pending" data-role="availability-indicator">Availability status pending</div>
       </td>
-      <td><textarea data-field="notes" placeholder="Optional notes"></textarea></td>
       <td><button type="button" class="danger remove-row-btn">Remove</button></td>
     </tr>
   </template>
 
   <script>
     const STORAGE_KEY = "pivot-monthly-credit-snapshot-workspace";
+    const BILL_MAP_STORAGE_KEY = "pivot-monthly-bill-map-workspace";
     let suppressAutoSave = false;
     const rowsBody = document.getElementById("credit-rows");
     const rowTemplate = document.getElementById("row-template");
@@ -703,6 +742,7 @@
       });
 
       rowsBody.appendChild(row);
+      updateRowAvailabilityIndicator(row);
       saveWorkspaceState();
     }
 
@@ -725,6 +765,126 @@
       return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
     }
 
+    function getAvailabilityStatus(creditLimitValue, availableCreditValue) {
+      const creditLimit = Number(creditLimitValue);
+      const availableCredit = Number(availableCreditValue);
+
+      if (!Number.isFinite(creditLimit) || !Number.isFinite(availableCredit) || creditLimit <= 0) {
+        return {
+          label: "Availability status pending",
+          className: "availability-pending"
+        };
+      }
+
+      const ratio = availableCredit / creditLimit;
+
+      if (ratio >= 0.4) {
+        return {
+          label: "Stable",
+          className: "availability-stable"
+        };
+      }
+
+      if (ratio >= 0.1) {
+        return {
+          label: "Tightening",
+          className: "availability-tightening"
+        };
+      }
+
+      return {
+        label: "Constrained",
+        className: "availability-constrained"
+      };
+    }
+
+    function updateRowAvailabilityIndicator(row) {
+      const indicator = row.querySelector('[data-role="availability-indicator"]');
+      if (!indicator) return;
+
+      const creditLimitField = row.querySelector('[data-field="creditLimit"]');
+      const availableCreditField = row.querySelector('[data-field="availableCredit"]');
+      const availabilityStatus = getAvailabilityStatus(
+        creditLimitField ? creditLimitField.value : "",
+        availableCreditField ? availableCreditField.value : ""
+      );
+
+      indicator.textContent = availabilityStatus.label;
+      indicator.className = `availability-pill ${availabilityStatus.className}`;
+    }
+
+    function updateAllAvailabilityIndicators() {
+      rowsBody.querySelectorAll("tr").forEach((row) => updateRowAvailabilityIndicator(row));
+    }
+
+    function normalizeAccountName(value) {
+      return (value || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+    }
+
+    function isCreditCardBillMapRow(row) {
+      const category = (row.category || "").toLowerCase();
+      const name = (row.name || "").toLowerCase();
+      const creditCardPattern = /(card|visa|mastercard|master card|amex|american express|discover|capital one|citi|chase|bankamericard)/;
+
+      return creditCardPattern.test(name) || (category === "debt" && creditCardPattern.test(name));
+    }
+
+    function getImportedCreditAccounts() {
+      try {
+        const rawState = window.localStorage.getItem(BILL_MAP_STORAGE_KEY);
+        if (!rawState) return [];
+
+        const state = JSON.parse(rawState);
+        const billRows = Array.isArray(state.billRows) ? state.billRows : [];
+
+        return billRows
+          .filter((row) => isCreditCardBillMapRow(row))
+          .map((row) => ({
+            accountName: row.name || "",
+            minimumRequired: row.minimumRequired || ""
+          }))
+          .filter((row) => normalizeAccountName(row.accountName));
+      } catch (error) {
+        console.error("Unable to import credit account data from Monthly Bill Map.", error);
+        return [];
+      }
+    }
+
+    function syncImportedAccountsFromBillMap() {
+      const importedAccounts = getImportedCreditAccounts();
+      if (!importedAccounts.length) return;
+
+      suppressAutoSave = true;
+
+      importedAccounts.forEach((importedAccount) => {
+        const normalizedImportedName = normalizeAccountName(importedAccount.accountName);
+        const existingRows = Array.from(rowsBody.querySelectorAll("tr"));
+        const matchingRow = existingRows.find((row) => {
+          const accountField = row.querySelector('[data-field="accountName"]');
+          return normalizeAccountName(accountField ? accountField.value : "") === normalizedImportedName;
+        });
+
+        if (matchingRow) {
+          const minimumField = matchingRow.querySelector('[data-field="minimumRequired"]');
+          if (minimumField) {
+            minimumField.value = importedAccount.minimumRequired;
+          }
+          return;
+        }
+
+        addRow({
+          accountName: importedAccount.accountName,
+          minimumRequired: importedAccount.minimumRequired
+        });
+      });
+
+      suppressAutoSave = false;
+      saveWorkspaceState();
+    }
+
     function setList(list, items, fallback) {
       list.innerHTML = "";
       if (!items.length) {
@@ -743,22 +903,17 @@
       const currentCount = rows.filter((row) => row.status === "Current").length;
       const protectionCount = rows.filter((row) => row.status === "Protection plan active").length;
       const stabilizingCount = rows.filter((row) => row.status === "Stabilizing").length;
-      const minimumCoveredCount = rows.filter((row) => {
-        const planned = Number(row.plannedPayment || 0);
-        const actual = Number(row.actualPayment || 0);
-        const minimum = Number(row.minimumRequired || 0);
-        return minimum > 0 && (planned >= minimum || actual >= minimum);
-      }).length;
+      const minimumRecordedCount = rows.filter((row) => Number(row.minimumRequired || 0) > 0).length;
 
-      if (currentCount >= 3 && minimumCoveredCount >= 3) {
-        return `${mappedMonth ? `${mappedMonth} ` : "This month "}shows several accounts remaining in stable standing. Continued minimum coverage and protection-plan follow-through are supporting containment progress.`;
+      if (currentCount >= 3 && minimumRecordedCount >= 3) {
+        return `${mappedMonth ? `${mappedMonth} ` : "This month "}shows several accounts remaining in stable standing. Core account details and minimum payment awareness are supporting clearer month-to-month monitoring.`;
       }
 
       if (protectionCount > 0 || stabilizingCount > 0) {
-        return `${mappedMonth ? `${mappedMonth} ` : "This month "}shows visible stabilization work in progress. Protection plans, minimum coverage, and steady follow-through appear to be helping maintain continuity across accounts.`;
+        return `${mappedMonth ? `${mappedMonth} ` : "This month "}shows visible stabilization work in progress. Account status tracking and minimum payment awareness are helping maintain continuity across accounts.`;
       }
 
-      return `${mappedMonth ? `${mappedMonth} ` : "This month "}shows a manageable snapshot overall. Continued consistency around minimum coverage and account monitoring can help reinforce stability through the cycle.`;
+      return `${mappedMonth ? `${mappedMonth} ` : "This month "}shows a manageable snapshot overall. Continued consistency around account monitoring and credit-awareness details can help reinforce stability through the cycle.`;
     }
 
     function generateSummary() {
@@ -775,12 +930,7 @@
       const stabilizingAccounts = rows.filter((row) => row.status === "Stabilizing");
       const behindAccounts = rows.filter((row) => row.status === "Behind");
 
-      const minimumCoverage = rows.filter((row) => {
-        const planned = Number(row.plannedPayment || 0);
-        const actual = Number(row.actualPayment || 0);
-        const minimum = Number(row.minimumRequired || 0);
-        return minimum > 0 && (planned >= minimum || actual >= minimum);
-      });
+      const minimumCoverage = rows.filter((row) => Number(row.minimumRequired || 0) > 0);
 
       const standing = [];
       const coverage = [];
@@ -795,11 +945,11 @@
         standing.push(`${rows.filter((row) => row.status === "Monitoring only").length} account(s) are being monitored without active change this month.`);
       }
 
-      coverage.push(`${minimumCoverage.length} account(s) appear to have minimum coverage planned or already reflected this cycle.`);
+      coverage.push(`${minimumCoverage.length} account(s) have a minimum payment amount recorded in this snapshot.`);
       if (minimumCoverage.length < rows.length) {
-        coverage.push("Some accounts may still need closer review to confirm minimum continuity this month.");
+        coverage.push("Some accounts may still need their minimum payment amount added for fuller monthly awareness.");
       } else {
-        coverage.push("Minimum coverage appears broadly in place across the listed accounts.");
+        coverage.push("Minimum payment awareness appears broadly in place across the listed accounts.");
       }
 
       progress.push(`${protectionAccounts.length} account(s) are marked with a protection plan active.`);
@@ -811,16 +961,16 @@
       }
 
       if (protectionAccounts.length) {
-        focus.push("Maintain follow-through on protection-plan accounts so those supports keep holding through the cycle.");
+        focus.push("Maintain visibility on protection-plan accounts so those supports stay clear through the cycle.");
       }
       if (stabilizingAccounts.length) {
-        focus.push("Keep stabilizing accounts visible and continue steady monthly continuity steps.");
+        focus.push("Keep stabilizing accounts visible and continue steady monthly account review.");
       }
       if (!protectionAccounts.length && !stabilizingAccounts.length) {
-        focus.push("Continue reinforcing current standing with steady minimum coverage and calm account monitoring.");
+        focus.push("Continue reinforcing current standing with calm account monitoring and updated credit details.");
       }
       if (behindAccounts.length) {
-        focus.push("Review behind accounts gently and identify where continuity or protection steps may need to stay active this month.");
+        focus.push("Review behind accounts gently and identify where protection or status changes may need to stay visible this month.");
       }
 
       setList(standingList, standing, "No stable-standing signals were identified from the current entries.");
@@ -853,8 +1003,14 @@
       suppressAutoSave = false;
     }
 
-    rowsBody.addEventListener("input", saveWorkspaceState);
-    rowsBody.addEventListener("change", saveWorkspaceState);
+    rowsBody.addEventListener("input", () => {
+      updateAllAvailabilityIndicators();
+      saveWorkspaceState();
+    });
+    rowsBody.addEventListener("change", () => {
+      updateAllAvailabilityIndicators();
+      saveWorkspaceState();
+    });
     mappedMonthSelect.addEventListener("change", saveWorkspaceState);
     mappedYearSelect.addEventListener("change", saveWorkspaceState);
     scoreLogFields.forEach((field) => {
@@ -869,8 +1025,13 @@
     document.getElementById("nav-reset-btn").addEventListener("click", resetSnapshot);
 
     if (!restoreWorkspaceState()) {
-      addRow();
-      addRow();
+      syncImportedAccountsFromBillMap();
+      if (!readRows().length) {
+        addRow();
+        addRow();
+      }
+    } else {
+      syncImportedAccountsFromBillMap();
     }
   </script>
 </body>

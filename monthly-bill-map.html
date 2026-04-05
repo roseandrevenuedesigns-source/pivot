@@ -286,6 +286,82 @@
       margin-top: 6px;
     }
 
+    .paycheck-content {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(240px, 0.95fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .paycheck-note {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel-soft);
+      align-self: start;
+    }
+
+    .paycheck-note h4 {
+      margin: 0 0 10px;
+      font-family: "Libre Baskerville", serif;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+
+    .paycheck-note-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .paycheck-note-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 9px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .paycheck-note-item:first-child {
+      padding-top: 0;
+      border-top: 0;
+    }
+
+    .paycheck-note-item input[type="checkbox"] {
+      width: auto;
+      margin-top: 2px;
+      flex: 0 0 auto;
+    }
+
+    .paycheck-note-text {
+      flex: 1;
+      line-height: 1.45;
+      transition: opacity 140ms ease;
+    }
+
+    .paycheck-note-text strong {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 0.94rem;
+      color: var(--text);
+    }
+
+    .paycheck-note-text span {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .paycheck-note-item.is-complete .paycheck-note-text {
+      opacity: 0.68;
+      text-decoration: line-through;
+      text-decoration-thickness: 1px;
+    }
+
+    .paycheck-note-empty {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
     .calendar-view {
       display: none;
       gap: 16px;
@@ -418,6 +494,10 @@
       }
 
       .timing-setup {
+        grid-template-columns: 1fr;
+      }
+
+      .paycheck-content {
         grid-template-columns: 1fr;
       }
     }
@@ -716,6 +796,7 @@
   <script>
     const STORAGE_KEY = "pivot-monthly-bill-map-workspace";
     let suppressAutoSave = false;
+    let checklistState = {};
     const rowsBody = document.getElementById("bill-rows");
     const rowTemplate = document.getElementById("row-template");
     const paycheckRowsBody = document.getElementById("paycheck-rows");
@@ -757,7 +838,8 @@
           mappedMonth: mappedMonthSelect.value,
           mappedYear: mappedYearSelect.value,
           billRows: readRows(),
-          paycheckRows: readPaycheckRows()
+          paycheckRows: readPaycheckRows(),
+          checklistState
         };
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       } catch (error) {
@@ -772,6 +854,7 @@
 
         const state = JSON.parse(rawState);
         suppressAutoSave = true;
+        checklistState = state.checklistState && typeof state.checklistState === "object" ? state.checklistState : {};
         mappedMonthSelect.value = state.mappedMonth || "";
         mappedYearSelect.value = state.mappedYear || "";
 
@@ -794,6 +877,7 @@
         return true;
       } catch (error) {
         suppressAutoSave = false;
+        checklistState = {};
         console.error("Unable to restore workspace state.", error);
         return false;
       }
@@ -943,6 +1027,68 @@
       return "Covered";
     }
 
+    function createChecklistKey(label, row, index) {
+      return [
+        label,
+        row.name || "",
+        row.statementAmountDue || "",
+        row.plannedPayment || "",
+        row.dueDate || "",
+        index
+      ].join("::");
+    }
+
+    function buildChecklistPanel(label, rows) {
+      const panel = document.createElement("aside");
+      panel.className = "paycheck-note";
+      panel.innerHTML = "<h4>Due This Check</h4>";
+
+      if (!rows.length) {
+        const emptyNote = document.createElement("p");
+        emptyNote.className = "paycheck-note-empty";
+        emptyNote.textContent = "No bills are currently assigned to this paycheck cycle.";
+        panel.appendChild(emptyNote);
+        return panel;
+      }
+
+      const list = document.createElement("div");
+      list.className = "paycheck-note-list";
+
+      rows.forEach((row, index) => {
+        const item = document.createElement("label");
+        item.className = "paycheck-note-item";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.dataset.checklistKey = createChecklistKey(label, row, index);
+        checkbox.checked = Boolean(checklistState[checkbox.dataset.checklistKey]);
+
+        const text = document.createElement("div");
+        text.className = "paycheck-note-text";
+        text.innerHTML = `
+          <strong>${formatTitleLike(row.name)}</strong>
+          <span>Amount due: ${formatMoney(row.statementAmountDue || row.plannedPayment)}</span>
+        `;
+
+        if (checkbox.checked) {
+          item.classList.add("is-complete");
+        }
+
+        checkbox.addEventListener("change", () => {
+          checklistState[checkbox.dataset.checklistKey] = checkbox.checked;
+          item.classList.toggle("is-complete", checkbox.checked);
+          saveWorkspaceState();
+        });
+
+        item.appendChild(checkbox);
+        item.appendChild(text);
+        list.appendChild(item);
+      });
+
+      panel.appendChild(list);
+      return panel;
+    }
+
     function buildCoverageSummaries(rows, paycheckEntries) {
       const labelOrder = ["Check 1", "Check 2", "Check 3 / Other"];
       const summaries = {};
@@ -1059,7 +1205,17 @@
         if (prefixParts.length) {
           target.interpretation.textContent += ` ${prefixParts.join(". ")}.`;
         }
-        renderPaycheckItems(target.items, groupedRows);
+
+        target.items.innerHTML = "";
+        const content = document.createElement("div");
+        content.className = "paycheck-content";
+
+        const detailColumn = document.createElement("div");
+        renderPaycheckItems(detailColumn, groupedRows);
+
+        content.appendChild(detailColumn);
+        content.appendChild(buildChecklistPanel(label, groupedRows));
+        target.items.appendChild(content);
       });
 
       paycheckView.classList.add("visible");
@@ -1328,6 +1484,7 @@
         console.error("Unable to clear workspace state.", error);
       }
 
+      checklistState = {};
       rowsBody.innerHTML = "";
       paycheckRowsBody.innerHTML = "";
       addRow();
