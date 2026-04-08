@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monthly Income Snapshot</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap');
+
+    :root {
+      --bg: #F6F3EF;
+      --panel: #FCFAF8;
+      --panel-soft: #E8DAD3;
+      --text: #3E3A38;
+      --muted: #7A6F68;
+      --line: rgba(122, 111, 104, 0.24);
+      --accent: #C28A73;
+      --accent-soft: #E8DAD3;
+      --green: #7A6F68;
+      --gold: #C28A73;
+      --rose: #9A8175;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Inter", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    .wrap {
+      width: min(1140px, calc(100% - 32px));
+      margin: 28px auto 48px;
+    }
+
+    .hero,
+    .panel,
+    .summary-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 8px 22px rgba(62, 58, 56, 0.05);
+    }
+
+    .hero {
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0 0 12px;
+      line-height: 1.15;
+    }
+
+    h1 {
+      font-family: "Cormorant Garamond", serif;
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    h2,
+    h3 {
+      font-family: "Libre Baskerville", serif;
+    }
+
+    p {
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    .hero p,
+    .panel > p,
+    .note,
+    .summary-card p {
+      color: var(--muted);
+    }
+
+    .panel {
+      padding: 24px;
+    }
+
+    .timing-setup {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+    }
+
+    .timing-field label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+    }
+
+    .subsection-title {
+      margin-top: 20px;
+      margin-bottom: 8px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 18px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 860px;
+    }
+
+    th,
+    td {
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    th {
+      text-align: left;
+      background: var(--panel-soft);
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    input,
+    select,
+    button {
+      font: inherit;
+    }
+
+    input,
+    select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 9px 10px;
+      background: #fff;
+      color: var(--text);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 12px 20px;
+      font-family: "Inter", sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .primary {
+      background: var(--accent);
+      color: #fffaf7;
+    }
+
+    .secondary {
+      background: var(--panel-soft);
+      color: var(--text);
+    }
+
+    .danger {
+      background: var(--panel-soft);
+      color: var(--text);
+      padding: 8px 12px;
+    }
+
+    .allocation-pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      font-size: 0.82rem;
+      font-weight: 600;
+      line-height: 1.2;
+      white-space: nowrap;
+      background: var(--panel-soft);
+      color: var(--muted);
+    }
+
+    .allocation-pill.is-full {
+      background: #e4ebe3;
+      color: #5d6c5a;
+    }
+
+    .allocation-pill.is-partial {
+      background: #efe3d7;
+      color: #8b6f57;
+    }
+
+    .allocation-pill.is-over {
+      background: #ead9d3;
+      color: #8e6e66;
+    }
+
+    .totals-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .summary-card {
+      padding: 20px;
+    }
+
+    .summary-card h3 {
+      font-size: 1rem;
+      color: var(--text);
+    }
+
+    .summary-card strong {
+      display: block;
+      font-size: 1.2rem;
+      color: var(--accent);
+    }
+
+    .note {
+      margin-top: 18px;
+      font-size: 0.95rem;
+    }
+
+    .workspace-nav {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .workspace-nav h3 {
+      margin-bottom: 10px;
+      font-size: 1rem;
+    }
+
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .nav-button {
+      display: inline-block;
+      text-decoration: none;
+      border-radius: 999px;
+      padding: 12px 20px;
+      background: var(--panel-soft);
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    @media (max-width: 900px) {
+      .totals-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 760px) {
+      .wrap {
+        width: min(100% - 20px, 1140px);
+        margin-top: 16px;
+      }
+
+      .hero,
+      .panel,
+      .summary-card {
+        border-radius: 16px;
+      }
+
+      .timing-setup,
+      .totals-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .wrap {
+        width: 100%;
+        margin: 0;
+      }
+
+      .hero,
+      .panel,
+      .summary-card {
+        box-shadow: none;
+        background: #fff;
+      }
+
+      .actions,
+      .workspace-nav {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1>Monthly Income Snapshot</h1>
+      <p>
+        Use this page to log deposits and track where income is landing across the month. Visibility comes before sequencing.
+      </p>
+    </section>
+
+    <section class="panel">
+      <h2>Monthly Deposit Awareness Workspace</h2>
+      <p>
+        This workspace is for monthly income visibility and account landing awareness. It is not a budgeting page or an expense tracker.
+      </p>
+
+      <section class="timing-setup" aria-label="Cycle Timing Setup">
+        <div class="timing-field">
+          <label for="mappedMonthSelect">Month being tracked</label>
+          <select id="mappedMonthSelect">
+            <option value="">Select month</option>
+            <option value="1">January</option>
+            <option value="2">February</option>
+            <option value="3">March</option>
+            <option value="4">April</option>
+            <option value="5">May</option>
+            <option value="6">June</option>
+            <option value="7">July</option>
+            <option value="8">August</option>
+            <option value="9">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+          </select>
+        </div>
+        <div class="timing-field">
+          <label for="mappedYearSelect">Year</label>
+          <select id="mappedYearSelect">
+            <option value="">Select year</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+            <option value="2028">2028</option>
+          </select>
+        </div>
+      </section>
+
+      <h3 class="subsection-title">Deposit Entries</h3>
+      <p>
+        Log each deposit and where it lands so the month’s income picture is visible before bill sequencing begins.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Deposit date</th>
+              <th>Income source</th>
+              <th>Total deposit amount</th>
+              <th>Bill account allocation</th>
+              <th>Spend account allocation</th>
+              <th>Savings account allocation</th>
+              <th>Other allocation</th>
+              <th>Status</th>
+              <th>Row</th>
+            </tr>
+          </thead>
+          <tbody id="deposit-rows"></tbody>
+        </table>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="secondary" id="add-row-btn">Add Row</button>
+        <button type="button" class="secondary" id="reset-btn">Reset This Workspace</button>
+      </div>
+
+      <section class="totals-grid" aria-live="polite">
+        <article class="summary-card">
+          <h3>Total to Bill account</h3>
+          <strong id="bill-total">$0.00</strong>
+          <p>Deposits landing in the bill-pay structure this month.</p>
+        </article>
+
+        <article class="summary-card">
+          <h3>Total to Spend account</h3>
+          <strong id="spend-total">$0.00</strong>
+          <p>Deposits landing in the spending account this month.</p>
+        </article>
+
+        <article class="summary-card">
+          <h3>Total to Savings account</h3>
+          <strong id="savings-total">$0.00</strong>
+          <p>Deposits landing in savings this month.</p>
+        </article>
+
+        <article class="summary-card">
+          <h3>Total to Other</h3>
+          <strong id="other-total">$0.00</strong>
+          <p>Deposits landing outside the main listed destinations.</p>
+        </article>
+
+        <article class="summary-card">
+          <h3>Total income this month</h3>
+          <strong id="income-total">$0.00</strong>
+          <p>Total deposits entered for the current month snapshot.</p>
+        </article>
+      </section>
+
+      <p class="note">
+        This is a visibility-first monthly income log for local beta use. Enter each deposit once, then note where it is being allocated across the month.
+      </p>
+
+      <section class="workspace-nav" aria-label="Workspace Navigation">
+        <h3>Workspace Navigation</h3>
+        <div class="nav-links">
+          <a class="nav-button" href="household-stability-checklist.html">Back</a>
+          <a class="nav-button" href="monthly-bill-map.html">Next</a>
+          <a class="nav-button" href="index.html">Return to Pivot Home</a>
+          <button type="button" class="secondary" id="archive-btn">Save This Month for Records</button>
+          <button type="button" class="secondary" id="nav-reset-btn">Reset This Workspace</button>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <template id="row-template">
+    <tr>
+      <td><input type="date" data-field="depositDate"></td>
+      <td><input type="text" data-field="incomeSource" placeholder="Employer, benefits, transfer"></td>
+      <td><input type="number" data-field="totalDepositAmount" min="0" step="0.01" placeholder="0.00"></td>
+      <td><input type="number" data-field="billAccountAllocation" min="0" step="0.01" placeholder="0.00"></td>
+      <td><input type="number" data-field="spendAccountAllocation" min="0" step="0.01" placeholder="0.00"></td>
+      <td><input type="number" data-field="savingsAccountAllocation" min="0" step="0.01" placeholder="0.00"></td>
+      <td><input type="number" data-field="otherAllocation" min="0" step="0.01" placeholder="0.00"></td>
+      <td><div class="allocation-pill" data-role="allocation-status">Allocation pending</div></td>
+      <td><button type="button" class="danger remove-row-btn">Remove</button></td>
+    </tr>
+  </template>
+
+  <script>
+    const STORAGE_KEY = "pivot-monthly-income-snapshot-workspace";
+    let suppressAutoSave = false;
+    const rowsBody = document.getElementById("deposit-rows");
+    const rowTemplate = document.getElementById("row-template");
+    const mappedMonthSelect = document.getElementById("mappedMonthSelect");
+    const mappedYearSelect = document.getElementById("mappedYearSelect");
+    const totalTargets = {
+      "Bill account": document.getElementById("bill-total"),
+      "Spend account": document.getElementById("spend-total"),
+      "Savings account": document.getElementById("savings-total"),
+      "Other": document.getElementById("other-total"),
+      total: document.getElementById("income-total")
+    };
+
+    function formatMoney(value) {
+      const number = Number(value || 0);
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD"
+      }).format(Number.isFinite(number) ? number : 0);
+    }
+
+    function parseMoney(value) {
+      const number = Number(value || 0);
+      return Number.isFinite(number) ? number : 0;
+    }
+
+    function getAllocationTotal(row) {
+      return (
+        parseMoney(row.billAccountAllocation) +
+        parseMoney(row.spendAccountAllocation) +
+        parseMoney(row.savingsAccountAllocation) +
+        parseMoney(row.otherAllocation)
+      );
+    }
+
+    function getAllocationStatus(row) {
+      const totalDepositAmount = parseMoney(row.totalDepositAmount);
+      const allocationTotal = getAllocationTotal(row);
+
+      if (totalDepositAmount <= 0) {
+        return {
+          label: "Allocation pending",
+          className: ""
+        };
+      }
+
+      if (allocationTotal > totalDepositAmount) {
+        return {
+          label: "Over-allocated",
+          className: "is-over"
+        };
+      }
+
+      if (allocationTotal === totalDepositAmount) {
+        return {
+          label: "Fully allocated",
+          className: "is-full"
+        };
+      }
+
+      return {
+        label: "Partially allocated",
+        className: "is-partial"
+      };
+    }
+
+    function updateRowAllocationStatus(rowElement) {
+      const row = {};
+      rowElement.querySelectorAll("[data-field]").forEach((field) => {
+        row[field.dataset.field] = field.value.trim();
+      });
+
+      const indicator = rowElement.querySelector('[data-role="allocation-status"]');
+      if (!indicator) return;
+
+      const status = getAllocationStatus(row);
+      indicator.textContent = status.label;
+      indicator.className = `allocation-pill${status.className ? ` ${status.className}` : ""}`;
+    }
+
+    function updateAllRowAllocationStatuses() {
+      rowsBody.querySelectorAll("tr").forEach((rowElement) => updateRowAllocationStatus(rowElement));
+    }
+
+    function readRows() {
+      return Array.from(rowsBody.querySelectorAll("tr"))
+        .map((row) => {
+          const result = {};
+          row.querySelectorAll("[data-field]").forEach((field) => {
+            result[field.dataset.field] = field.value.trim();
+          });
+          return result;
+        })
+        .filter((row) => Object.values(row).some((value) => value !== ""));
+    }
+
+    function updateTotals() {
+      const rows = readRows();
+      const totals = {
+        "Bill account": 0,
+        "Spend account": 0,
+        "Savings account": 0,
+        "Other": 0,
+        total: 0
+      };
+
+      rows.forEach((row) => {
+        totals.total += parseMoney(row.totalDepositAmount);
+        totals["Bill account"] += parseMoney(row.billAccountAllocation);
+        totals["Spend account"] += parseMoney(row.spendAccountAllocation);
+        totals["Savings account"] += parseMoney(row.savingsAccountAllocation);
+        totals["Other"] += parseMoney(row.otherAllocation);
+      });
+
+      totalTargets["Bill account"].textContent = formatMoney(totals["Bill account"]);
+      totalTargets["Spend account"].textContent = formatMoney(totals["Spend account"]);
+      totalTargets["Savings account"].textContent = formatMoney(totals["Savings account"]);
+      totalTargets["Other"].textContent = formatMoney(totals["Other"]);
+      totalTargets.total.textContent = formatMoney(totals.total);
+    }
+
+    function saveWorkspaceState() {
+      if (suppressAutoSave) return;
+
+      try {
+        const state = {
+          mappedMonth: mappedMonthSelect.value,
+          mappedYear: mappedYearSelect.value,
+          depositRows: readRows()
+        };
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (error) {
+        console.error("Unable to save workspace state.", error);
+      }
+    }
+
+    function addRow(data = {}) {
+      const fragment = rowTemplate.content.cloneNode(true);
+      const row = fragment.querySelector("tr");
+
+      row.querySelectorAll("[data-field]").forEach((field) => {
+        const key = field.dataset.field;
+        if (data[key] !== undefined && data[key] !== null && data[key] !== "") {
+          field.value = data[key];
+        }
+      });
+
+      row.querySelector(".remove-row-btn").addEventListener("click", () => {
+        row.remove();
+        if (!rowsBody.children.length) addRow();
+        updateTotals();
+        saveWorkspaceState();
+      });
+
+      rowsBody.appendChild(row);
+      updateRowAllocationStatus(row);
+      updateTotals();
+      saveWorkspaceState();
+    }
+
+    function restoreWorkspaceState() {
+      try {
+        const rawState = window.localStorage.getItem(STORAGE_KEY);
+        if (!rawState) return false;
+
+        const state = JSON.parse(rawState);
+        suppressAutoSave = true;
+        mappedMonthSelect.value = state.mappedMonth || "";
+        mappedYearSelect.value = state.mappedYear || "";
+        rowsBody.innerHTML = "";
+
+        if (Array.isArray(state.depositRows) && state.depositRows.length) {
+          state.depositRows.forEach((row) => addRow(row));
+        } else {
+          addRow();
+        }
+
+        suppressAutoSave = false;
+        updateTotals();
+        return true;
+      } catch (error) {
+        suppressAutoSave = false;
+        console.error("Unable to restore workspace state.", error);
+        return false;
+      }
+    }
+
+    function resetWorkspace() {
+      suppressAutoSave = true;
+
+      try {
+        window.localStorage.removeItem(STORAGE_KEY);
+      } catch (error) {
+        console.error("Unable to clear workspace state.", error);
+      }
+
+      mappedMonthSelect.value = "";
+      mappedYearSelect.value = "";
+      rowsBody.innerHTML = "";
+      addRow();
+      suppressAutoSave = false;
+      updateTotals();
+    }
+
+    rowsBody.addEventListener("input", () => {
+      updateAllRowAllocationStatuses();
+      updateTotals();
+      saveWorkspaceState();
+    });
+
+    rowsBody.addEventListener("change", () => {
+      updateAllRowAllocationStatuses();
+      updateTotals();
+      saveWorkspaceState();
+    });
+
+    mappedMonthSelect.addEventListener("change", saveWorkspaceState);
+    mappedYearSelect.addEventListener("change", saveWorkspaceState);
+
+    document.getElementById("add-row-btn").addEventListener("click", () => addRow());
+    document.getElementById("reset-btn").addEventListener("click", resetWorkspace);
+    document.getElementById("nav-reset-btn").addEventListener("click", resetWorkspace);
+    document.getElementById("archive-btn").addEventListener("click", () => window.print());
+
+    if (!restoreWorkspaceState()) {
+      addRow();
+    } else {
+      updateAllRowAllocationStatuses();
+      updateTotals();
+    }
+  </script>
+</body>
+</html>
