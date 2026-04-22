@@ -206,6 +206,27 @@
       cursor: pointer;
     }
 
+    .resource-footer {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+
+    .resource-footer p {
+      margin: 0;
+    }
+
+    .resource-footer p + p {
+      margin-top: 8px;
+    }
+
+    .resource-footer a {
+      color: var(--accent);
+    }
+
     .corner-stamp {
       position: fixed;
       right: 18px;
@@ -474,6 +495,12 @@
           <button type="button" id="nav-reset-btn">Reset This Workspace</button>
         </div>
       </section>
+
+      <footer class="resource-footer">
+        <p>Pivot is part of the Financial Containment Operating System (FCOS).</p>
+        <p>Methodology notes:<br><a href="https://adultingwithoutasafetynet.wordpress.com/">Adulting Without a Safety Net</a></p>
+        <p>Companion printable tools:<br><a href="https://roseandrevenuedesign.etsy.com">Rose &amp; Revenue Designs</a></p>
+      </footer>
     </section>
   </main>
   <script>
