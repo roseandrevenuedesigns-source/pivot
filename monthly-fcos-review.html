@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monthly FCOS Review</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap');
+
+    :root {
+      --bg: #F6F3EF;
+      --panel: #FCFAF8;
+      --panel-soft: #E8DAD3;
+      --text: #3E3A38;
+      --muted: #7A6F68;
+      --line: rgba(122, 111, 104, 0.24);
+      --accent: #C28A73;
+      --accent-soft: #E8DAD3;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Inter", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    .wrap {
+      width: min(1080px, calc(100% - 32px));
+      margin: 28px auto 48px;
+    }
+
+    .hero,
+    .panel,
+    .section-card,
+    .summary-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 8px 22px rgba(62, 58, 56, 0.05);
+    }
+
+    .hero {
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+
+    .panel {
+      padding: 24px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1,
+    h2,
+    h3 {
+      line-height: 1.15;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-family: "Cormorant Garamond", serif;
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    h2,
+    h3 {
+      font-family: "Libre Baskerville", serif;
+    }
+
+    p {
+      line-height: 1.6;
+    }
+
+    .hero p,
+    .panel > p,
+    .support-text,
+    .note,
+    .summary-card p {
+      color: var(--muted);
+    }
+
+    .timing-setup {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+    }
+
+    input,
+    textarea,
+    button,
+    select {
+      font: inherit;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 9px 10px;
+      background: #fff;
+      color: var(--text);
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .print-field-value {
+      display: none;
+      font: inherit;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.5;
+      min-height: 1.4em;
+    }
+
+    .summary-card {
+      padding: 20px;
+      margin-top: 24px;
+    }
+
+    .summary-card strong {
+      display: block;
+      font-size: 1.15rem;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    .sections {
+      display: grid;
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .section-card {
+      padding: 18px;
+    }
+
+    .checks {
+      display: grid;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .check-item:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .check-item input[type="checkbox"] {
+      width: auto;
+      margin-top: 3px;
+    }
+
+    .check-item label {
+      flex: 1;
+      line-height: 1.5;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 12px 20px;
+      font-family: "Inter", sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .secondary {
+      background: var(--panel-soft);
+      color: var(--text);
+    }
+
+    .note {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      font-size: 0.95rem;
+    }
+
+    .workspace-nav {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .workspace-nav h3 {
+      margin-bottom: 10px;
+      font-size: 1rem;
+    }
+
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .nav-button,
+    .nav-links button {
+      display: inline-block;
+      width: auto;
+      text-decoration: none;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 12px 20px;
+      background: var(--panel-soft);
+      color: var(--text);
+      font-family: "Inter", sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .resource-footer {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+
+    .resource-footer p {
+      margin: 0;
+    }
+
+    .resource-footer p + p {
+      margin-top: 8px;
+    }
+
+    .resource-footer a {
+      color: var(--accent);
+    }
+
+    .corner-stamp {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      width: 64px;
+      opacity: 0.35;
+      pointer-events: none;
+      user-select: none;
+      z-index: 0;
+    }
+
+    @media (max-width: 760px) {
+      .wrap {
+        width: min(100% - 20px, 1080px);
+        margin-top: 16px;
+      }
+
+      .hero,
+      .panel,
+      .section-card,
+      .summary-card {
+        border-radius: 16px;
+      }
+
+      .timing-setup {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .wrap {
+        width: 100%;
+        margin: 0;
+      }
+
+      .hero,
+      .panel,
+      .section-card,
+      .summary-card {
+        box-shadow: none;
+        background: #fff;
+      }
+
+      .workspace-nav,
+      .actions,
+      .corner-stamp {
+        display: none;
+      }
+
+      input,
+      select,
+      textarea {
+        display: none !important;
+      }
+
+      .print-field-value {
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1>Monthly FCOS Review</h1>
+      <p>
+        Use this page to close out the month, note what held, and capture what needs to stay visible as the next month begins.
+      </p>
+    </section>
+
+    <section class="panel">
+      <h2>Monthly Closeout Workspace</h2>
+      <p>
+        This workspace is for monthly review, carry-forward visibility, and continuity. It is not a scorecard and it does not need to be finished before the next month begins.
+      </p>
+
+      <section class="timing-setup" aria-label="Review Timing Setup">
+        <div class="field">
+          <label for="mappedMonthSelect">Month being reviewed</label>
+          <select id="mappedMonthSelect">
+            <option value="">Select month</option>
+            <option value="1">January</option>
+            <option value="2">February</option>
+            <option value="3">March</option>
+            <option value="4">April</option>
+            <option value="5">May</option>
+            <option value="6">June</option>
+            <option value="7">July</option>
+            <option value="8">August</option>
+            <option value="9">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="mappedYearSelect">Year</label>
+          <select id="mappedYearSelect">
+            <option value="">Select year</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+            <option value="2028">2028</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="summary-card" aria-live="polite">
+        <h3>Review Progress</h3>
+        <strong id="progress-label">0 of 5 closeout markers noted</strong>
+        <p id="progress-copy">Use the checks below to capture what was completed and what still needs to stay visible.</p>
+      </section>
+
+      <div class="sections">
+        <section class="section-card">
+          <h2>Month Closeout Markers</h2>
+          <div class="checks">
+            <div class="check-item">
+              <input type="checkbox" id="income-reviewed">
+              <label for="income-reviewed">Monthly Income Snapshot has been reviewed for this month.</label>
+            </div>
+            <div class="check-item">
+              <input type="checkbox" id="bill-map-reviewed">
+              <label for="bill-map-reviewed">Monthly Bill Map reflects the month’s final sequencing and protections.</label>
+            </div>
+            <div class="check-item">
+              <input type="checkbox" id="credit-reviewed">
+              <label for="credit-reviewed">Monthly Credit Snapshot has been updated for the month.</label>
+            </div>
+            <div class="check-item">
+              <input type="checkbox" id="carryover-identified">
+              <label for="carryover-identified">Carry-forward items for next month have been identified.</label>
+            </div>
+            <div class="check-item">
+              <input type="checkbox" id="next-month-started">
+              <label for="next-month-started">Next-month planning can begin even if this closeout is still being refined.</label>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-card">
+          <h2>What Held This Month</h2>
+          <p class="support-text">Brief notes are enough. Capture what helped maintain continuity.</p>
+          <textarea id="what-held" placeholder="What held together this month in income, bill sequencing, protections, or household stability?"></textarea>
+        </section>
+
+        <section class="section-card">
+          <h2>What Created Pressure</h2>
+          <p class="support-text">Keep this practical and light. Focus on what affected containment.</p>
+          <textarea id="what-pressured" placeholder="What created pressure, fragility, or sequencing strain this month?"></textarea>
+        </section>
+
+        <section class="section-card">
+          <h2>What Carries Forward</h2>
+          <p class="support-text">List only what still needs to stay visible as the next month begins.</p>
+          <textarea id="carry-forward" placeholder="What unfinished items, protections, balances, or reminders need to carry forward into next month?"></textarea>
+        </section>
+
+        <section class="section-card">
+          <h2>Next Month First Priorities</h2>
+          <p class="support-text">Use this space for the first few items that need attention next month.</p>
+          <textarea id="next-priorities" placeholder="What needs attention first as the next month begins?"></textarea>
+        </section>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="secondary" id="reset-btn">Reset This Workspace</button>
+      </div>
+
+      <p class="note">
+        Monthly closeout can stay open while next-month planning begins. The goal is continuity, not perfect timing.
+      </p>
+
+      <section class="workspace-nav" aria-label="Workspace Navigation">
+        <h3>Workspace Navigation</h3>
+        <div class="nav-links">
+          <a class="nav-button" href="monthly-credit-snapshot.html">Back</a>
+          <a class="nav-button" href="quarterly-review.html">Next</a>
+          <a class="nav-button" href="index.html">Return to Pivot Home</a>
+          <button type="button" id="archive-btn">Save This Month for Records</button>
+          <button type="button" id="nav-reset-btn">Reset This Workspace</button>
+        </div>
+      </section>
+
+      <footer class="resource-footer">
+        <p>Pivot is part of the Financial Containment Operating System (FCOS).</p>
+        <p>Methodology notes:<br><a href="https://adultingwithoutasafetynet.wordpress.com/">Adulting Without a Safety Net</a></p>
+        <p>Companion printable tools:<br><a href="https://roseandrevenuedesign.etsy.com">Rose &amp; Revenue Designs</a></p>
+      </footer>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "pivot-monthly-fcos-review-workspace";
+    const UNASSIGNED_WORKSPACE_KEY = "__unassigned__";
+    let suppressAutoSave = false;
+    let activeWorkspaceKey = UNASSIGNED_WORKSPACE_KEY;
+    let activeMappedMonth = "";
+    let activeMappedYear = "";
+    const mappedMonthSelect = document.getElementById("mappedMonthSelect");
+    const mappedYearSelect = document.getElementById("mappedYearSelect");
+    const progressLabel = document.getElementById("progress-label");
+    const progressCopy = document.getElementById("progress-copy");
+    const trackedFields = Array.from(document.querySelectorAll("input, select, textarea"));
+    const closeoutChecks = Array.from(document.querySelectorAll('input[type="checkbox"]'));
+
+    function getWorkspaceKey(monthValue, yearValue) {
+      if (!monthValue || !yearValue) return UNASSIGNED_WORKSPACE_KEY;
+      return `${yearValue}-${String(monthValue).padStart(2, "0")}`;
+    }
+
+    function createEmptyStorageRoot() {
+      return {
+        version: 2,
+        lastViewedKey: UNASSIGNED_WORKSPACE_KEY,
+        workspaces: {}
+      };
+    }
+
+    function readStorageRoot() {
+      try {
+        const rawState = window.localStorage.getItem(STORAGE_KEY);
+        if (!rawState) return createEmptyStorageRoot();
+
+        const parsedState = JSON.parse(rawState);
+        if (parsedState && typeof parsedState === "object" && parsedState.workspaces) {
+          return {
+            version: 2,
+            lastViewedKey: parsedState.lastViewedKey || UNASSIGNED_WORKSPACE_KEY,
+            workspaces: parsedState.workspaces
+          };
+        }
+
+        const legacyMonth = parsedState?.mappedMonth || "";
+        const legacyYear = parsedState?.mappedYear || "";
+        const legacyKey = getWorkspaceKey(legacyMonth, legacyYear);
+
+        return {
+          version: 2,
+          lastViewedKey: legacyKey,
+          workspaces: {
+            [legacyKey]: parsedState || {}
+          }
+        };
+      } catch (error) {
+        console.error("Unable to read monthly FCOS review workspace state.", error);
+        return createEmptyStorageRoot();
+      }
+    }
+
+    function writeStorageRoot(rootState) {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(rootState));
+    }
+
+    function buildWorkspaceState(monthValue = activeMappedMonth, yearValue = activeMappedYear) {
+      const fieldValues = {};
+      trackedFields.forEach((field) => {
+        if (field.id === "mappedMonthSelect" || field.id === "mappedYearSelect") return;
+        fieldValues[field.id] = field.type === "checkbox" ? field.checked : field.value;
+      });
+
+      return {
+        mappedMonth: monthValue || "",
+        mappedYear: yearValue || "",
+        fieldValues
+      };
+    }
+
+    function updateProgress() {
+      const completedCount = closeoutChecks.filter((field) => field.checked).length;
+      progressLabel.textContent = `${completedCount} of ${closeoutChecks.length} closeout markers noted`;
+
+      if (completedCount === closeoutChecks.length) {
+        progressCopy.textContent = "The month’s closeout markers are all noted. This review can still stay open if you need to refine details later.";
+        return;
+      }
+
+      if (completedCount >= 3) {
+        progressCopy.textContent = "Core review markers are in place. Capture only what still needs to stay visible as the next month begins.";
+        return;
+      }
+
+      progressCopy.textContent = "Use the checks below to capture what was completed and what still needs to stay visible.";
+    }
+
+    function saveWorkspaceState() {
+      if (suppressAutoSave) return;
+
+      try {
+        const rootState = readStorageRoot();
+        rootState.lastViewedKey = activeWorkspaceKey;
+        rootState.workspaces[activeWorkspaceKey] = buildWorkspaceState(activeMappedMonth, activeMappedYear);
+        writeStorageRoot(rootState);
+      } catch (error) {
+        console.error("Unable to save monthly FCOS review workspace state.", error);
+      }
+    }
+
+    function formatPrintableFieldValue(field) {
+      if (field.tagName === "SELECT") {
+        return field.options[field.selectedIndex]?.text || "";
+      }
+
+      return field.value || "";
+    }
+
+    function syncPrintFieldValues() {
+      document.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]), select, textarea').forEach((field) => {
+        let printValue = field.nextElementSibling;
+        if (!printValue || !printValue.classList.contains("print-field-value")) {
+          printValue = document.createElement("div");
+          printValue.className = "print-field-value";
+          field.insertAdjacentElement("afterend", printValue);
+        }
+
+        printValue.textContent = formatPrintableFieldValue(field);
+      });
+    }
+
+    function loadWorkspace(monthValue, yearValue) {
+      const rootState = readStorageRoot();
+      const workspaceKey = getWorkspaceKey(monthValue, yearValue);
+      const workspaceState = rootState.workspaces[workspaceKey] || {
+        mappedMonth: monthValue || "",
+        mappedYear: yearValue || "",
+        fieldValues: {}
+      };
+
+      suppressAutoSave = true;
+      mappedMonthSelect.value = monthValue || "";
+      mappedYearSelect.value = yearValue || "";
+
+      trackedFields.forEach((field) => {
+        if (field.id === "mappedMonthSelect" || field.id === "mappedYearSelect") return;
+        const savedValue = workspaceState.fieldValues?.[field.id];
+        if (field.type === "checkbox") {
+          field.checked = Boolean(savedValue);
+        } else {
+          field.value = savedValue || "";
+        }
+      });
+
+      suppressAutoSave = false;
+      activeWorkspaceKey = workspaceKey;
+      activeMappedMonth = monthValue || "";
+      activeMappedYear = yearValue || "";
+      updateProgress();
+    }
+
+    function initializeWorkspace() {
+      const rootState = readStorageRoot();
+      const initialKey = rootState.lastViewedKey || UNASSIGNED_WORKSPACE_KEY;
+      const initialState = rootState.workspaces[initialKey];
+
+      if (initialState) {
+        loadWorkspace(initialState.mappedMonth || "", initialState.mappedYear || "");
+        return;
+      }
+
+      loadWorkspace("", "");
+    }
+
+    function handleWorkspaceSelectionChange() {
+      if (suppressAutoSave) return;
+
+      saveWorkspaceState();
+      loadWorkspace(mappedMonthSelect.value, mappedYearSelect.value);
+    }
+
+    function resetWorkspace() {
+      suppressAutoSave = true;
+
+      try {
+        const rootState = readStorageRoot();
+        delete rootState.workspaces[activeWorkspaceKey];
+        rootState.lastViewedKey = activeWorkspaceKey;
+        writeStorageRoot(rootState);
+      } catch (error) {
+        console.error("Unable to clear monthly FCOS review workspace state.", error);
+      }
+
+      trackedFields.forEach((field) => {
+        if (field.type === "checkbox") {
+          field.checked = false;
+        } else {
+          field.value = "";
+        }
+      });
+
+      suppressAutoSave = false;
+      loadWorkspace("", "");
+    }
+
+    trackedFields.forEach((field) => {
+      if (field.id === "mappedMonthSelect" || field.id === "mappedYearSelect") return;
+      field.addEventListener("input", () => {
+        updateProgress();
+        saveWorkspaceState();
+      });
+      field.addEventListener("change", () => {
+        updateProgress();
+        saveWorkspaceState();
+      });
+    });
+
+    mappedMonthSelect.addEventListener("change", handleWorkspaceSelectionChange);
+    mappedYearSelect.addEventListener("change", handleWorkspaceSelectionChange);
+    document.getElementById("reset-btn").addEventListener("click", resetWorkspace);
+    document.getElementById("nav-reset-btn").addEventListener("click", resetWorkspace);
+    document.getElementById("archive-btn").addEventListener("click", () => {
+      syncPrintFieldValues();
+      window.print();
+    });
+    window.addEventListener("beforeprint", syncPrintFieldValues);
+
+    initializeWorkspace();
+  </script>
+  <img class="corner-stamp" src="pivot-logo.png" alt="">
+</body>
+</html>

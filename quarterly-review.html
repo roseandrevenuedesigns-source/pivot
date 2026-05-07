@@ -131,6 +131,16 @@
       resize: vertical;
     }
 
+    .print-field-value {
+      display: none;
+      font: inherit;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.5;
+      min-height: 1.4em;
+    }
+
     .sections {
       display: grid;
       gap: 16px;
@@ -274,6 +284,16 @@
 
       .workspace-nav {
         display: none;
+      }
+
+      input,
+      select,
+      textarea {
+        display: none !important;
+      }
+
+      .print-field-value {
+        display: block;
       }
 
       .corner-stamp {
@@ -488,7 +508,7 @@
       <section class="workspace-nav" aria-label="Workspace Navigation">
         <h3>Workspace Navigation</h3>
         <div class="nav-links">
-          <a class="nav-button" href="monthly-credit-snapshot.html">Back</a>
+          <a class="nav-button" href="monthly-fcos-review.html">Back</a>
           <a class="nav-button" href="annual-review.html">Next</a>
           <a class="nav-button" href="index.html">Return to FCOS Home</a>
           <button type="button" id="archive-btn">Save This Review for Records</button>
@@ -521,6 +541,27 @@
       } catch (error) {
         console.error("Unable to save quarterly review workspace state.", error);
       }
+    }
+
+    function formatPrintableFieldValue(field) {
+      if (field.tagName === "SELECT") {
+        return field.options[field.selectedIndex]?.text || "";
+      }
+
+      return field.value || "";
+    }
+
+    function syncPrintFieldValues() {
+      document.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]), select, textarea').forEach((field) => {
+        let printValue = field.nextElementSibling;
+        if (!printValue || !printValue.classList.contains("print-field-value")) {
+          printValue = document.createElement("div");
+          printValue.className = "print-field-value";
+          field.insertAdjacentElement("afterend", printValue);
+        }
+
+        printValue.textContent = formatPrintableFieldValue(field);
+      });
     }
 
     function restoreWorkspaceState() {
@@ -567,7 +608,11 @@
     });
 
     quarterlyResetButton.addEventListener("click", resetQuarterlyWorkspace);
-    quarterlyArchiveButton.addEventListener("click", () => window.print());
+    quarterlyArchiveButton.addEventListener("click", () => {
+      syncPrintFieldValues();
+      window.print();
+    });
+    window.addEventListener("beforeprint", syncPrintFieldValues);
     restoreWorkspaceState();
   </script>
   <img class="corner-stamp" src="pivot-logo.png" alt="">

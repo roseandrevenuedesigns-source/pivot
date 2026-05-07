@@ -133,6 +133,16 @@
       resize: vertical;
     }
 
+    .print-field-value {
+      display: none;
+      font: inherit;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.5;
+      min-height: 1.4em;
+    }
+
     button {
       width: auto;
       cursor: pointer;
@@ -357,6 +367,16 @@
 
       .workspace-nav {
         display: none;
+      }
+
+      input,
+      select,
+      textarea {
+        display: none !important;
+      }
+
+      .print-field-value {
+        display: block;
       }
 
       .corner-stamp {
@@ -674,6 +694,27 @@
       }
     }
 
+    function formatPrintableFieldValue(field) {
+      if (field.tagName === "SELECT") {
+        return field.options[field.selectedIndex]?.text || "";
+      }
+
+      return field.value || "";
+    }
+
+    function syncPrintFieldValues() {
+      document.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]), select, textarea').forEach((field) => {
+        let printValue = field.nextElementSibling;
+        if (!printValue || !printValue.classList.contains("print-field-value")) {
+          printValue = document.createElement("div");
+          printValue.className = "print-field-value";
+          field.insertAdjacentElement("afterend", printValue);
+        }
+
+        printValue.textContent = formatPrintableFieldValue(field);
+      });
+    }
+
     function restoreWorkspaceState() {
       try {
         const rawState = window.localStorage.getItem(STORAGE_KEY);
@@ -886,7 +927,11 @@
     });
 
     recommendationButton.addEventListener("click", generateRecommendation);
-    annualArchiveButton.addEventListener("click", () => window.print());
+    annualArchiveButton.addEventListener("click", () => {
+      syncPrintFieldValues();
+      window.print();
+    });
+    window.addEventListener("beforeprint", syncPrintFieldValues);
     annualResetButton.addEventListener("click", resetAnnualWorkspace);
     restoreWorkspaceState();
   </script>

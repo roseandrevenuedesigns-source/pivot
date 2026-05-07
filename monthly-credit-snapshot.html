@@ -98,6 +98,53 @@
       background: var(--panel);
     }
 
+    .slot-panel {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+    }
+
+    .slot-header {
+      display: grid;
+      gap: 12px;
+    }
+
+    .slot-header h3 {
+      margin-bottom: 0;
+      font-size: 1rem;
+    }
+
+    .slot-switcher {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 8px;
+      overflow-x: auto;
+      max-width: 100%;
+      min-width: 0;
+      padding-bottom: 2px;
+    }
+
+    .slot-button {
+      background: var(--panel-soft);
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .slot-button.is-active {
+      background: var(--accent);
+      color: #fffaf7;
+    }
+
+    .slot-status {
+      color: var(--muted);
+      font-size: 0.94rem;
+      line-height: 1.55;
+    }
+
     .timing-field label {
       display: block;
       margin-bottom: 6px;
@@ -160,6 +207,16 @@
       resize: vertical;
     }
 
+    .print-field-value {
+      display: none;
+      font: inherit;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.5;
+      min-height: 1.4em;
+    }
+
     .actions {
       display: flex;
       flex-wrap: wrap;
@@ -170,10 +227,12 @@
     button {
       border: 1px solid var(--line);
       border-radius: 999px;
-      padding: 12px 20px;
+      padding: 10px 16px;
       font-family: "Inter", sans-serif;
+      font-size: 0.95rem;
       font-weight: 500;
       cursor: pointer;
+      white-space: nowrap;
     }
 
     .primary {
@@ -383,6 +442,16 @@
         display: none;
       }
 
+      input,
+      select,
+      textarea {
+        display: none !important;
+      }
+
+      .print-field-value {
+        display: block;
+      }
+
       .corner-stamp {
         display: none;
       }
@@ -407,6 +476,22 @@
       <p class="note">
         Credit card account names and minimum payments can be pulled in automatically from Monthly Bill Map.
       </p>
+
+      <section class="slot-panel" aria-label="Credit Snapshot Workspace Slots">
+        <div class="slot-header">
+          <h3>Workspace Slots</h3>
+          <div class="slot-switcher">
+            <button type="button" class="slot-button secondary" id="slot-last-btn">Last Month</button>
+            <button type="button" class="slot-button secondary" id="slot-current-btn">This Month</button>
+            <button type="button" class="slot-button secondary" id="slot-next-btn">Next Month</button>
+            <button type="button" class="secondary" id="carry-forward-btn">Copy Prior Month Into This Slot</button>
+            <button type="button" class="secondary" id="promote-next-btn">Roll Working Months Forward</button>
+          </div>
+        </div>
+        <p class="slot-status" id="slot-status-text">
+          Use Last Month for comparison, This Month for live monthly awareness, and Next Month for early credit snapshot setup as statements and balances become known.
+        </p>
+      </section>
 
       <section class="timing-setup" aria-label="Month Setup">
         <div class="timing-field">
@@ -660,7 +745,7 @@
         <h3>Workspace Navigation</h3>
         <div class="nav-links">
           <a class="nav-button" href="monthly-bill-map.html">Back</a>
-          <a class="nav-button" href="quarterly-review.html">Next</a>
+          <a class="nav-button" href="monthly-fcos-review.html">Next</a>
           <a class="nav-button" href="index.html">Return to FCOS Home</a>
           <button type="button" class="secondary" id="archive-btn">Save This Month for Records</button>
           <button type="button" class="secondary" id="nav-reset-btn">Reset This Workspace</button>
@@ -703,11 +788,20 @@
   <script>
     const STORAGE_KEY = "pivot-monthly-credit-snapshot-workspace";
     const BILL_MAP_STORAGE_KEY = "pivot-monthly-bill-map-workspace";
+    const UNASSIGNED_WORKSPACE_KEY = "__unassigned__";
     let suppressAutoSave = false;
+    let activeSlot = "current";
+    let activeWorkspaceKey = UNASSIGNED_WORKSPACE_KEY;
+    let activeMappedMonth = "";
+    let activeMappedYear = "";
     const rowsBody = document.getElementById("credit-rows");
     const rowTemplate = document.getElementById("row-template");
     const mappedMonthSelect = document.getElementById("mappedMonthSelect");
     const mappedYearSelect = document.getElementById("mappedYearSelect");
+    const slotLastButton = document.getElementById("slot-last-btn");
+    const slotCurrentButton = document.getElementById("slot-current-btn");
+    const slotNextButton = document.getElementById("slot-next-btn");
+    const slotStatusText = document.getElementById("slot-status-text");
     const summary = document.getElementById("summary");
     const assessmentText = document.getElementById("assessment-text");
     const standingList = document.getElementById("standing-list");
@@ -717,52 +811,219 @@
     const scoreLogFields = Array.from(document.querySelectorAll(".table-wrap table tbody input, .table-wrap table tbody textarea"))
       .filter((field) => !field.closest("#credit-rows"));
 
+    function getWorkspaceKey(monthValue, yearValue) {
+      if (!monthValue || !yearValue) return UNASSIGNED_WORKSPACE_KEY;
+      return `${yearValue}-${String(monthValue).padStart(2, "0")}`;
+    }
+
+    function createEmptyStorageRoot() {
+      return {
+        version: 3,
+        lastViewedKey: UNASSIGNED_WORKSPACE_KEY,
+        workspaces: {},
+        slots: {},
+        activeSlot: "current"
+      };
+    }
+
+    function formatMonthYearLabel(monthValue, yearValue) {
+      if (!monthValue || !yearValue) return "Month not set";
+      const date = new Date(Number(yearValue), Number(monthValue) - 1, 1);
+      if (Number.isNaN(date.getTime())) return "Month not set";
+      return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    }
+
+    function getNextMonthYear(monthValue, yearValue) {
+      if (!monthValue || !yearValue) {
+        const today = new Date();
+        return {
+          month: String(today.getMonth() + 2 > 12 ? 1 : today.getMonth() + 2),
+          year: String(today.getMonth() + 2 > 12 ? today.getFullYear() + 1 : today.getFullYear())
+        };
+      }
+
+      const date = new Date(Number(yearValue), Number(monthValue) - 1, 1);
+      date.setMonth(date.getMonth() + 1);
+      return {
+        month: String(date.getMonth() + 1),
+        year: String(date.getFullYear())
+      };
+    }
+
+    function getPreviousMonthYear(monthValue, yearValue) {
+      if (!monthValue || !yearValue) {
+        const today = new Date();
+        return {
+          month: String(today.getMonth() === 0 ? 12 : today.getMonth()),
+          year: String(today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear())
+        };
+      }
+
+      const date = new Date(Number(yearValue), Number(monthValue) - 1, 1);
+      date.setMonth(date.getMonth() - 1);
+      return {
+        month: String(date.getMonth() + 1),
+        year: String(date.getFullYear())
+      };
+    }
+
+    function parseWorkspaceKeyToMonthYear(workspaceKey) {
+      if (!workspaceKey || workspaceKey === UNASSIGNED_WORKSPACE_KEY) {
+        return { month: "", year: "" };
+      }
+
+      const match = workspaceKey.match(/^(\d{4})-(\d{2})$/);
+      if (!match) {
+        return { month: "", year: "" };
+      }
+
+      return {
+        year: match[1],
+        month: String(Number(match[2]))
+      };
+    }
+
+    function ensureSlotStructure(rootState) {
+      if (rootState.slots && rootState.slots.last && rootState.slots.current && rootState.slots.next) {
+        rootState.activeSlot = ["last", "current", "next"].includes(rootState.activeSlot) ? rootState.activeSlot : "current";
+        return rootState;
+      }
+
+      const fallbackCurrentKey = rootState.lastViewedKey && rootState.lastViewedKey !== UNASSIGNED_WORKSPACE_KEY
+        ? rootState.lastViewedKey
+        : getWorkspaceKey(String(new Date().getMonth() + 1), String(new Date().getFullYear()));
+      const fallbackCurrentMonthYear = parseWorkspaceKeyToMonthYear(fallbackCurrentKey);
+      const fallbackLastMonthYear = getPreviousMonthYear(fallbackCurrentMonthYear.month, fallbackCurrentMonthYear.year);
+      const fallbackNextMonthYear = getNextMonthYear(fallbackCurrentMonthYear.month, fallbackCurrentMonthYear.year);
+      const fallbackLastKey = getWorkspaceKey(fallbackLastMonthYear.month, fallbackLastMonthYear.year);
+      const fallbackNextKey = getWorkspaceKey(fallbackNextMonthYear.month, fallbackNextMonthYear.year);
+
+      if (!rootState.workspaces[fallbackCurrentKey]) {
+        rootState.workspaces[fallbackCurrentKey] = {
+          mappedMonth: fallbackCurrentMonthYear.month,
+          mappedYear: fallbackCurrentMonthYear.year,
+          creditRows: [],
+          scoreLogValues: []
+        };
+      }
+
+      if (!rootState.workspaces[fallbackLastKey]) {
+        rootState.workspaces[fallbackLastKey] = {
+          mappedMonth: fallbackLastMonthYear.month,
+          mappedYear: fallbackLastMonthYear.year,
+          creditRows: [],
+          scoreLogValues: []
+        };
+      }
+
+      if (!rootState.workspaces[fallbackNextKey]) {
+        rootState.workspaces[fallbackNextKey] = {
+          mappedMonth: fallbackNextMonthYear.month,
+          mappedYear: fallbackNextMonthYear.year,
+          creditRows: [],
+          scoreLogValues: []
+        };
+      }
+
+      rootState.slots = {
+        last: { workspaceKey: fallbackLastKey },
+        current: { workspaceKey: fallbackCurrentKey },
+        next: { workspaceKey: fallbackNextKey }
+      };
+      rootState.activeSlot = "current";
+      return rootState;
+    }
+
+    function readStorageRoot() {
+      try {
+        const rawState = window.localStorage.getItem(STORAGE_KEY);
+        if (!rawState) return createEmptyStorageRoot();
+
+        const parsedState = JSON.parse(rawState);
+        if (parsedState && typeof parsedState === "object" && parsedState.workspaces) {
+          return ensureSlotStructure({
+            version: 3,
+            lastViewedKey: parsedState.lastViewedKey || UNASSIGNED_WORKSPACE_KEY,
+            workspaces: parsedState.workspaces,
+            slots: parsedState.slots || {},
+            activeSlot: parsedState.activeSlot || "current"
+          });
+        }
+
+        const legacyMonth = parsedState?.mappedMonth || "";
+        const legacyYear = parsedState?.mappedYear || "";
+        const legacyKey = getWorkspaceKey(legacyMonth, legacyYear);
+
+        return ensureSlotStructure({
+          version: 3,
+          lastViewedKey: legacyKey,
+          workspaces: {
+            [legacyKey]: {
+              mappedMonth: legacyMonth,
+              mappedYear: legacyYear,
+              creditRows: Array.isArray(parsedState?.creditRows) ? parsedState.creditRows : [],
+              scoreLogValues: Array.isArray(parsedState?.scoreLogValues) ? parsedState.scoreLogValues : []
+            }
+          },
+          slots: {},
+          activeSlot: "current"
+        });
+      } catch (error) {
+        console.error("Unable to read monthly credit snapshot workspace state.", error);
+        return createEmptyStorageRoot();
+      }
+    }
+
+    function writeStorageRoot(rootState) {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(rootState));
+    }
+
+    function readExternalStorageRoot(storageKey, collectionKey) {
+      try {
+        const rawState = window.localStorage.getItem(storageKey);
+        if (!rawState) return createEmptyStorageRoot();
+
+        const parsedState = JSON.parse(rawState);
+        if (parsedState && typeof parsedState === "object" && parsedState.workspaces) {
+          return {
+            version: 2,
+            lastViewedKey: parsedState.lastViewedKey || UNASSIGNED_WORKSPACE_KEY,
+            workspaces: parsedState.workspaces
+          };
+        }
+
+        const legacyMonth = parsedState?.mappedMonth || "";
+        const legacyYear = parsedState?.mappedYear || "";
+        const legacyKey = getWorkspaceKey(legacyMonth, legacyYear);
+
+        return {
+          version: 2,
+          lastViewedKey: legacyKey,
+          workspaces: {
+            [legacyKey]: {
+              mappedMonth: legacyMonth,
+              mappedYear: legacyYear,
+              [collectionKey]: Array.isArray(parsedState?.[collectionKey]) ? parsedState[collectionKey] : []
+            }
+          }
+        };
+      } catch (error) {
+        console.error("Unable to read related monthly workspace state.", error);
+        return createEmptyStorageRoot();
+      }
+    }
+
     function saveWorkspaceState() {
       if (suppressAutoSave) return;
 
       try {
-        const state = {
-          mappedMonth: mappedMonthSelect.value,
-          mappedYear: mappedYearSelect.value,
-          creditRows: readRows(),
-          scoreLogValues: scoreLogFields.map((field) => field.value)
-        };
-
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        const rootState = readStorageRoot();
+        rootState.activeSlot = activeSlot;
+        rootState.lastViewedKey = activeWorkspaceKey;
+        rootState.workspaces[activeWorkspaceKey] = buildWorkspaceState(activeMappedMonth, activeMappedYear);
+        writeStorageRoot(rootState);
       } catch (error) {
         console.error("Unable to save monthly credit snapshot workspace state.", error);
-      }
-    }
-
-    function restoreWorkspaceState() {
-      try {
-        const rawState = window.localStorage.getItem(STORAGE_KEY);
-        if (!rawState) return false;
-
-        const state = JSON.parse(rawState);
-        suppressAutoSave = true;
-        mappedMonthSelect.value = state.mappedMonth || "";
-        mappedYearSelect.value = state.mappedYear || "";
-
-        rowsBody.innerHTML = "";
-        if (Array.isArray(state.creditRows) && state.creditRows.length) {
-          state.creditRows.forEach((row) => addRow(row));
-        } else {
-          addRow();
-        }
-
-        if (Array.isArray(state.scoreLogValues)) {
-          scoreLogFields.forEach((field, index) => {
-            field.value = state.scoreLogValues[index] || "";
-          });
-        }
-
-        suppressAutoSave = false;
-        return true;
-      } catch (error) {
-        suppressAutoSave = false;
-        console.error("Unable to restore monthly credit snapshot workspace state.", error);
-        return false;
       }
     }
 
@@ -798,6 +1059,43 @@
           return result;
         })
         .filter((row) => Object.values(row).some((value) => value !== ""));
+    }
+
+    function buildWorkspaceState(monthValue = activeMappedMonth, yearValue = activeMappedYear) {
+      return {
+        mappedMonth: monthValue || "",
+        mappedYear: yearValue || "",
+        creditRows: readRows(),
+        scoreLogValues: scoreLogFields.map((field) => field.value)
+      };
+    }
+
+    function formatPrintableFieldValue(field) {
+      if (field.tagName === "SELECT") {
+        return field.options[field.selectedIndex]?.text || "";
+      }
+
+      if (field.type === "date" && field.value) {
+        const date = new Date(`${field.value}T00:00:00`);
+        if (!Number.isNaN(date.getTime())) {
+          return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+        }
+      }
+
+      return field.value || "";
+    }
+
+    function syncPrintFieldValues() {
+      document.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]), select, textarea').forEach((field) => {
+        let printValue = field.nextElementSibling;
+        if (!printValue || !printValue.classList.contains("print-field-value")) {
+          printValue = document.createElement("div");
+          printValue.className = "print-field-value";
+          field.insertAdjacentElement("afterend", printValue);
+        }
+
+        printValue.textContent = formatPrintableFieldValue(field);
+      });
     }
 
     function parseMonthSelection(monthValue, yearValue) {
@@ -874,13 +1172,11 @@
       return creditCardPattern.test(name) || (category === "debt" && creditCardPattern.test(name));
     }
 
-    function getImportedCreditAccounts() {
+    function getImportedCreditAccounts(monthValue = mappedMonthSelect.value, yearValue = mappedYearSelect.value) {
       try {
-        const rawState = window.localStorage.getItem(BILL_MAP_STORAGE_KEY);
-        if (!rawState) return [];
-
-        const state = JSON.parse(rawState);
-        const billRows = Array.isArray(state.billRows) ? state.billRows : [];
+        const rootState = readExternalStorageRoot(BILL_MAP_STORAGE_KEY, "billRows");
+        const workspaceKey = getWorkspaceKey(monthValue, yearValue);
+        const billRows = Array.isArray(rootState.workspaces[workspaceKey]?.billRows) ? rootState.workspaces[workspaceKey].billRows : [];
 
         return billRows
           .filter((row) => isCreditCardBillMapRow(row))
@@ -892,6 +1188,204 @@
       } catch (error) {
         console.error("Unable to import credit account data from Monthly Bill Map.", error);
         return [];
+      }
+    }
+
+    function clearGeneratedViews() {
+      summary.classList.remove("visible");
+    }
+
+    function updateSlotUI(rootState) {
+      const lastState = rootState.workspaces[rootState.slots.last.workspaceKey] || {};
+      const currentState = rootState.workspaces[rootState.slots.current.workspaceKey] || {};
+      const nextState = rootState.workspaces[rootState.slots.next.workspaceKey] || {};
+      slotLastButton.classList.toggle("is-active", activeSlot === "last");
+      slotCurrentButton.classList.toggle("is-active", activeSlot === "current");
+      slotNextButton.classList.toggle("is-active", activeSlot === "next");
+      slotLastButton.textContent = `Last Month: ${formatMonthYearLabel(lastState.mappedMonth, lastState.mappedYear)}`;
+      slotCurrentButton.textContent = `This Month: ${formatMonthYearLabel(currentState.mappedMonth, currentState.mappedYear)}`;
+      slotNextButton.textContent = `Next Month: ${formatMonthYearLabel(nextState.mappedMonth, nextState.mappedYear)}`;
+
+      if (activeSlot === "last") {
+        slotStatusText.textContent = "You are viewing the prior-month credit snapshot slot for comparison, score pattern review, and closeout reference.";
+        return;
+      }
+
+      if (activeSlot === "current") {
+        slotStatusText.textContent = "You are working in the current-month credit snapshot slot. Use Next Month to prepare upcoming credit account visibility early.";
+        return;
+      }
+
+      slotStatusText.textContent = "You are working in the next-month credit snapshot slot. This space can be prepared in advance without blocking the current month.";
+    }
+
+    function loadSlot(slotName) {
+      const rootState = readStorageRoot();
+      const slot = rootState.slots[slotName];
+      const workspaceKey = slot?.workspaceKey || UNASSIGNED_WORKSPACE_KEY;
+      const workspaceMonthYear = parseWorkspaceKeyToMonthYear(workspaceKey);
+      const workspaceState = rootState.workspaces[workspaceKey] || {
+        mappedMonth: workspaceMonthYear.month,
+        mappedYear: workspaceMonthYear.year,
+        creditRows: [],
+        scoreLogValues: []
+      };
+
+      suppressAutoSave = true;
+      mappedMonthSelect.value = workspaceState.mappedMonth || "";
+      mappedYearSelect.value = workspaceState.mappedYear || "";
+      rowsBody.innerHTML = "";
+
+      if (Array.isArray(workspaceState.creditRows) && workspaceState.creditRows.length) {
+        workspaceState.creditRows.forEach((row) => addRow(row));
+      } else {
+        addRow();
+      }
+
+      scoreLogFields.forEach((field, index) => {
+        field.value = Array.isArray(workspaceState.scoreLogValues) ? (workspaceState.scoreLogValues[index] || "") : "";
+      });
+
+      clearGeneratedViews();
+      suppressAutoSave = false;
+      activeSlot = slotName;
+      activeWorkspaceKey = workspaceKey;
+      activeMappedMonth = workspaceState.mappedMonth || "";
+      activeMappedYear = workspaceState.mappedYear || "";
+      updateSlotUI(rootState);
+      syncImportedAccountsFromBillMap();
+      updateAllAvailabilityIndicators();
+    }
+
+    function initializeWorkspace() {
+      const rootState = readStorageRoot();
+      const initialSlot = ["last", "current", "next"].includes(rootState.activeSlot) ? rootState.activeSlot : "current";
+      loadSlot(initialSlot);
+    }
+
+    function handleWorkspaceSelectionChange() {
+      if (suppressAutoSave) return;
+
+      try {
+        const rootState = readStorageRoot();
+        rootState.activeSlot = activeSlot;
+        rootState.lastViewedKey = activeWorkspaceKey;
+        rootState.workspaces[activeWorkspaceKey] = buildWorkspaceState(activeMappedMonth, activeMappedYear);
+
+        const nextWorkspaceKey = getWorkspaceKey(mappedMonthSelect.value, mappedYearSelect.value);
+        rootState.slots[activeSlot].workspaceKey = nextWorkspaceKey;
+
+        if (!rootState.workspaces[nextWorkspaceKey]) {
+          rootState.workspaces[nextWorkspaceKey] = {
+            mappedMonth: mappedMonthSelect.value || "",
+            mappedYear: mappedYearSelect.value || "",
+            creditRows: [],
+            scoreLogValues: []
+          };
+        }
+
+        writeStorageRoot(rootState);
+        loadSlot(activeSlot);
+      } catch (error) {
+        console.error("Unable to switch mapped month workspace.", error);
+      }
+    }
+
+    function switchSlot(slotName) {
+      if (activeSlot === slotName) return;
+      saveWorkspaceState();
+
+      try {
+        const rootState = readStorageRoot();
+        rootState.activeSlot = slotName;
+        writeStorageRoot(rootState);
+      } catch (error) {
+        console.error("Unable to switch workspace slot.", error);
+      }
+
+      loadSlot(slotName);
+    }
+
+    function promoteNextMonthSlot() {
+      saveWorkspaceState();
+
+      try {
+        const rootState = readStorageRoot();
+        const currentWorkspaceKey = rootState.slots.current.workspaceKey;
+        const nextWorkspaceKey = rootState.slots.next.workspaceKey;
+        const nextWorkspaceState = rootState.workspaces[nextWorkspaceKey] || { mappedMonth: "", mappedYear: "" };
+        rootState.slots.last.workspaceKey = currentWorkspaceKey;
+        rootState.slots.current.workspaceKey = nextWorkspaceKey;
+
+        const followingMonth = getNextMonthYear(nextWorkspaceState.mappedMonth, nextWorkspaceState.mappedYear);
+        const followingWorkspaceKey = getWorkspaceKey(followingMonth.month, followingMonth.year);
+        rootState.slots.next.workspaceKey = followingWorkspaceKey;
+        rootState.activeSlot = "current";
+        rootState.lastViewedKey = nextWorkspaceKey;
+
+        if (!rootState.workspaces[followingWorkspaceKey]) {
+          rootState.workspaces[followingWorkspaceKey] = {
+            mappedMonth: followingMonth.month,
+            mappedYear: followingMonth.year,
+            creditRows: [],
+            scoreLogValues: []
+          };
+        }
+
+        writeStorageRoot(rootState);
+        loadSlot("current");
+      } catch (error) {
+        console.error("Unable to promote next month workspace.", error);
+      }
+    }
+
+    function createCarriedCreditRow(row) {
+      return {
+        accountName: row.accountName || "",
+        minimumRequired: row.minimumRequired || "",
+        creditLimit: row.creditLimit || "",
+        currentBalance: "",
+        availableCredit: "",
+        interestRate: row.interestRate || "",
+        statementClosingDate: row.statementClosingDate || "",
+        status: row.status || ""
+      };
+    }
+
+    function carryForwardPriorMonthIntoActiveSlot() {
+      saveWorkspaceState();
+
+      try {
+        const rootState = readStorageRoot();
+        const previousMonth = getPreviousMonthYear(mappedMonthSelect.value || activeMappedMonth, mappedYearSelect.value || activeMappedYear);
+        const previousWorkspaceKey = getWorkspaceKey(previousMonth.month, previousMonth.year);
+        const previousWorkspace = rootState.workspaces[previousWorkspaceKey];
+        const previousRows = Array.isArray(previousWorkspace?.creditRows) ? previousWorkspace.creditRows.filter((row) => Object.values(row || {}).some((value) => value !== "")) : [];
+
+        if (!previousRows.length) {
+          window.alert("No prior-month credit snapshot workspace was found to copy from.");
+          return;
+        }
+
+        const activeWorkspace = rootState.workspaces[activeWorkspaceKey] || buildWorkspaceState(activeMappedMonth, activeMappedYear);
+        const existingRows = Array.isArray(activeWorkspace.creditRows) ? activeWorkspace.creditRows.filter((row) => Object.values(row || {}).some((value) => value !== "")) : [];
+
+        if (existingRows.length) {
+          const shouldReplace = window.confirm("Copying prior-month credit snapshot fields will replace the current account rows in this slot. Continue?");
+          if (!shouldReplace) return;
+        }
+
+        rootState.workspaces[activeWorkspaceKey] = {
+          ...activeWorkspace,
+          mappedMonth: mappedMonthSelect.value || activeMappedMonth || activeWorkspace.mappedMonth || "",
+          mappedYear: mappedYearSelect.value || activeMappedYear || activeWorkspace.mappedYear || "",
+          creditRows: previousRows.map(createCarriedCreditRow)
+        };
+
+        writeStorageRoot(rootState);
+        loadSlot(activeSlot);
+      } catch (error) {
+        console.error("Unable to carry forward prior-month credit snapshot data.", error);
       }
     }
 
@@ -1029,20 +1523,26 @@
       suppressAutoSave = true;
 
       try {
-        window.localStorage.removeItem(STORAGE_KEY);
+        const rootState = readStorageRoot();
+        delete rootState.workspaces[activeWorkspaceKey];
+        rootState.lastViewedKey = activeWorkspaceKey;
+        const workspaceMonth = mappedMonthSelect.value || activeMappedMonth;
+        const workspaceYear = mappedYearSelect.value || activeMappedYear;
+        const replacementKey = getWorkspaceKey(workspaceMonth, workspaceYear);
+        rootState.slots[activeSlot].workspaceKey = replacementKey;
+        rootState.workspaces[replacementKey] = {
+          mappedMonth: workspaceMonth || "",
+          mappedYear: workspaceYear || "",
+          creditRows: [],
+          scoreLogValues: []
+        };
+        writeStorageRoot(rootState);
       } catch (error) {
         console.error("Unable to clear monthly credit snapshot workspace state.", error);
       }
 
-      rowsBody.innerHTML = "";
-      addRow();
-      summary.classList.remove("visible");
-      mappedMonthSelect.value = "";
-      mappedYearSelect.value = "";
-      document.querySelectorAll(".table-wrap table tbody input, .table-wrap table tbody textarea").forEach((field) => {
-        field.value = "";
-      });
       suppressAutoSave = false;
+      loadSlot(activeSlot);
     }
 
     rowsBody.addEventListener("input", () => {
@@ -1053,8 +1553,13 @@
       updateAllAvailabilityIndicators();
       saveWorkspaceState();
     });
-    mappedMonthSelect.addEventListener("change", saveWorkspaceState);
-    mappedYearSelect.addEventListener("change", saveWorkspaceState);
+    slotLastButton.addEventListener("click", () => switchSlot("last"));
+    slotCurrentButton.addEventListener("click", () => switchSlot("current"));
+    slotNextButton.addEventListener("click", () => switchSlot("next"));
+    document.getElementById("carry-forward-btn").addEventListener("click", carryForwardPriorMonthIntoActiveSlot);
+    document.getElementById("promote-next-btn").addEventListener("click", promoteNextMonthSlot);
+    mappedMonthSelect.addEventListener("change", handleWorkspaceSelectionChange);
+    mappedYearSelect.addEventListener("change", handleWorkspaceSelectionChange);
     scoreLogFields.forEach((field) => {
       field.addEventListener("input", saveWorkspaceState);
       field.addEventListener("change", saveWorkspaceState);
@@ -1063,18 +1568,14 @@
     document.getElementById("add-row-btn").addEventListener("click", () => addRow());
     document.getElementById("generate-btn").addEventListener("click", generateSummary);
     document.getElementById("reset-btn").addEventListener("click", resetSnapshot);
-    document.getElementById("archive-btn").addEventListener("click", () => window.print());
+    document.getElementById("archive-btn").addEventListener("click", () => {
+      syncPrintFieldValues();
+      window.print();
+    });
+    window.addEventListener("beforeprint", syncPrintFieldValues);
     document.getElementById("nav-reset-btn").addEventListener("click", resetSnapshot);
 
-    if (!restoreWorkspaceState()) {
-      syncImportedAccountsFromBillMap();
-      if (!readRows().length) {
-        addRow();
-        addRow();
-      }
-    } else {
-      syncImportedAccountsFromBillMap();
-    }
+    initializeWorkspace();
   </script>
   <img class="corner-stamp" src="pivot-logo.png" alt="">
 </body>
